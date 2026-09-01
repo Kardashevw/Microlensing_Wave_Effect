@@ -32,4 +32,13 @@ using namespace std;
 
 #define PI acos(-1)
 
-double MainDiffraction(double kappa, double gamma, double kappaStar_in, double LensRedshift, double SourceRedshift, int ThreadCount);
+double MainDiffraction(
+    double kappa,
+    double gamma,
+    double kappaStar_in,
+    double LensRedshift,
+    double SourceRedshift,
+    int ThreadCount,
+    int PrecisionFactor,
+    int FieldID
+);

@@ -1,34 +1,43 @@
+import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+from simulation_config import (
+    add_simulation_args,
+    config_from_args,
+)
 
-# Simulation parameters
-KAPPA = 0.45
-GAMMA = 0.45
-KAPPA_STAR = 0.03
-LENS_Z = 0.50
-SOURCE_Z = 1.00
+parser = argparse.ArgumentParser(
+    description="Fourier analysis of a minimum-image simulation."
+)
+
+add_simulation_args(parser)
+
+parser.add_argument("--f-min", type=float, default=0.1)
+parser.add_argument("--f-max", type=float, default=2000.0)
+parser.add_argument("--df", type=float, default=1.0)
+
+args = parser.parse_args()
+config = config_from_args(args)
+
+KAPPA = config.kappa
+GAMMA = config.gamma
+KAPPA_STAR = config.kappa_star
+LENS_Z = config.lens_z
+SOURCE_Z = config.source_z
 
 # Physical constants, matching TotalSgnFourier.py
 M_SUN = 1.9884099e30
 G = 6.6743e-11
 C = 2.9979246e8
 
+suffix = config.suffix
 
-suffix = (
-    f"{KAPPA:.2f}_"
-    f"{GAMMA:.2f}_"
-    f"{KAPPA_STAR:.2f}_"
-    f"{LENS_Z:.2f}_"
-    f"{SOURCE_Z:.2f}.bin"
-)
-
-micro_dir = Path("MicroField_15")
-result_dir = Path("ResultMinimum_15")
-output_dir = Path("Freq_Time_Domain_Result_15")
-output_dir.mkdir(exist_ok=True)
+micro_dir = config.micro_dir
+result_dir = config.minimum_dir
+output_dir = config.frequency_dir
 
 
 # ---------------------------------------------------------
@@ -146,8 +155,18 @@ cut = 3 * length // 5
 t = t[:cut].copy()
 ft = ft[:cut].copy()
 
-print(f"Samples after cut: {len(t)}")
-print(f"Time duration     : {t[-1]:.10e} s")
+duration = t[-1] - t[0]
+
+if duration <= 0:
+    raise RuntimeError("Invalid time-domain duration")
+
+characteristic_df = 1.0 / duration
+nyquist_frequency = 1.0 / (2.0 * dt)
+
+print(f"Samples after cut : {len(t)}")
+print(f"Time duration     : {duration:.10e} s")
+print(f"Characteristic df : {characteristic_df:.3f} Hz")
+print(f"Nyquist frequency : {nyquist_frequency:.3f} Hz")
 
 
 # ---------------------------------------------------------
@@ -219,7 +238,12 @@ plt.close()
 # Im = sum(F(t) sin(omega t)) dt
 # ---------------------------------------------------------
 
-freq = np.arange(0.1, 2000.0, 1.0)
+freq = np.arange(
+    args.f_min,
+    args.f_max,
+    args.df,
+)
+
 omega = 2.0 * np.pi * freq
 
 f_real = np.empty(freq.size)

@@ -1,25 +1,27 @@
+import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-KAPPA = 0.45
-GAMMA = 0.45
-KAPPA_STAR = 0.03
-LENS_Z = 0.50
-SOURCE_Z = 1.00
-
-suffix = (
-    f"{KAPPA:.2f}_"
-    f"{GAMMA:.2f}_"
-    f"{KAPPA_STAR:.2f}_"
-    f"{LENS_Z:.2f}_"
-    f"{SOURCE_Z:.2f}.bin"
+from simulation_config import (
+    add_simulation_args,
+    config_from_args,
 )
 
-micro_dir = Path("MicroField_15")
-result_dir = Path("ResultMinimum_15")
+
+parser = argparse.ArgumentParser(
+    description="Inspect a minimum-image microlensing simulation."
+)
+
+add_simulation_args(parser)
+
+args = parser.parse_args()
+config = config_from_args(args)
+
+suffix = config.suffix
+micro_dir = config.micro_dir
+result_dir = config.minimum_dir
 
 metadata_file = micro_dir / f"AveMassAndNum_{suffix}"
 length_file = result_dir / f"TimeLength_min_{suffix}"

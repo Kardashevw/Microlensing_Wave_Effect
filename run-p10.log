@@ -1,0 +1,60 @@
+Simulation configuration:
+  kappa            = 0.45
+  gamma            = 0.45
+  kappa_star       = 0.03
+  lens_z           = 0.5
+  source_z         = 1
+  threads          = 8
+  precision_factor = 10
+  field_id         = 15
+IMF = Chabrier
+Average LensMass from PDF:0.34517976537693967343
+NOW SNR = 26
+PreOutPut 51.0678
+PreOutPut 99
+PreOutPut 0.00133018
+PreOutPut 51.0678
+PreOutPut 16.1491
+PreOutPut 0.0298147
+NStarStellar = 94
+NStarRemnant = 4
+Loaded 100 remnant mass-function points.
+ConstCRemnant = 4.61898
+RemnantMassMin = 0.318302
+RemnantMassMax = 88.8144
+ConstCStellar = 9.57383
+Numerical Average LensMass from Sample:0.29774420450233979318
+Numerical Maximum LensMass from Sample:1.28348109862760106914
+Numerical exact kappaStar from Sample = 0.0295135803
+Micro Pos X[0] = -38.6312 Micro Pos Y[0] = -49.3233
+Minimum Pos XY = -50.3327 Maximum Pos XY = 51.0096
+ResolutionL1 = 10.2136
+X1L1Length = 11
+All Micro lenses have been assigned to a L1 grid !!!!!!
+SumNumMicro = 98
+NStar = 98
+ResolutionL2 = 0.510678
+X1L2Length = 201
+X2SetL2 boundary = 51.5784638705
+X2SetL1 boundary = 61.2813432124
+L1 and L2 grid right !!! 
+L2Coeffi Runsing One Core Has 25 Task
+L2Coeffi Riveting Point [-1] = 201 X1L2Length = 201
+CostTimeL2Coeffi time : 0 s
+>>>>>>>>>>>>>>>Saving Microlensing Field<<<<<<<<<<<<<<
+>>>>>>>>>>>Saved done<<<<<<<<<<<<<
+LayerNum Runsing One Core Has 25 Task
+LayerNum Riveting Point [-1] = 200 X1L2Length - 1 = 200
+CostTimeLayerNum time : 1 s
+TotalLengthLayerNum_Res = 40000 (LengthX - 1)^2 = 40000
+Total Layer Num = 3141409
+One Core Has LayerNum 392676 Task
+X1SetL2OneDim size = 40000 (X1L2Length - 1) * (X2L2Length - 1)40000
+Rude Minimum Time Delay is -0.100028
+Rude Minimum X1 = 0.255339 X2 = -0.255339
+Rude Minimum X1 Index = 100 X2 Index = 99
+Rude Maximun Time Delay is 0.00144201
+Time Maximum Boundary For Time Delay Curve 0.00144201
+Time Delay Curve's Length = 101470
+0.00144145
+CostTimeAdaptiveCal =  0 s
