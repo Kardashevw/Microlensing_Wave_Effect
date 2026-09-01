@@ -164,10 +164,10 @@ int main()
     // }
     double kappa = 0.45;
     double gamma = 0.45;
-    double kappaStar_stellar = 0.3;
+    double kappaStar_stellar = 0.03;
     double LensRedshift = 0.5;
     double SourceRedshift = 1;
-    int thread_count = 100;
+    int thread_count = 8;
     
     MainDiffraction(kappa, gamma, kappaStar_stellar, LensRedshift, SourceRedshift, thread_count);
 }

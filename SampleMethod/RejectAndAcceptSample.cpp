@@ -87,7 +87,14 @@ double* SampleResult(int NStarStellar, int NStarRemnant, string IMFType)
     std::uniform_real_distribution<> Uniform01(0, 1); //用来生成0～1之间的均匀分布。
 
     /*差值remnant质量函数，输入一个质量给出一个PDF*/
-    ifstream RemnantMFFile("/disk1/home/shanxk/work/Paper3_adaptive_Micro_field_release/SampleMethod/Remnant_MF.csv", ios::in);
+    ifstream RemnantMFFile("SampleMethod/Remnant_MF.csv", ios::in);
+
+    if (!RemnantMFFile.is_open())
+    {
+    cerr << "Failed to open SampleMethod/Remnant_MF.csv" << endl;
+    exit(EXIT_FAILURE);
+    }
+
     string lineRemnantMF;
    
     vector<double> RemnantMFMass;
@@ -111,7 +118,20 @@ double* SampleResult(int NStarStellar, int NStarRemnant, string IMFType)
         }
         ReadIndex += 1;
     }
+
+    if (RemnantMFMass.size() <= 2 ||
+    RemnantMFPDF.size() <= 2 ||
+    RemnantMFMass.size() != RemnantMFPDF.size())
+    {
+    cerr << "Invalid remnant mass function data:" << endl;
+    cerr << "  masses: " << RemnantMFMass.size() << endl;
+    cerr << "  PDFs:   " << RemnantMFPDF.size() << endl;
+    exit(EXIT_FAILURE);
+    }
     
+    cout << "Loaded " << RemnantMFMass.size()
+     << " remnant mass-function points." << endl;
+
     tk::spline InterRemnantMF(RemnantMFMass,RemnantMFPDF);
 
     /*Remnant拒绝接受采样*/
@@ -236,7 +256,7 @@ double* SampleResult(int NStarStellar, int NStarRemnant, string IMFType)
     /*将采样的数据保存成文件*/
     ofstream IMFSampleTestOP;
     char IMFSampleTestFile[100];
-    sprintf(IMFSampleTestFile,"/disk1/home/shanxk/work/Paper3_adaptive_Micro_field_release/SampleMethod/SampleTest.bin");
+    sprintf(IMFSampleTestFile, "SampleMethod/SampleTest.bin");
     IMFSampleTestOP.open(IMFSampleTestFile, std::ofstream::binary);
     IMFSampleTestOP.write(reinterpret_cast<char *>(OutPut), sizeof(double)*(NStarStellar + NStarRemnant));
     IMFSampleTestOP.close();

@@ -57,7 +57,7 @@ double MainDiffraction(double kappa, double gamma, double kappaStar_in, double L
     double c = 2.9979246 * pow(10,8);
     //微透镜场的配置
     //time length/sky boundary SNR
-    int PrecisionFactor = 100;
+    int PrecisionFactor = 10;
     int Max_mass = 15; //只是管着文件名的，88，100，28确实代表最大质量，但是50代表的是Minimum和Saddle分别做了50个随机实现。
 
     // double LensRedshift = 0.5;
