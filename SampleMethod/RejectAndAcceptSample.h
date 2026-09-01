@@ -12,6 +12,7 @@
 #include <string>
 #include <random>
 #include "../spline.h"
+#include "../ReproducibleRandom.h"
 
 using std::sin;
 using std::cos;
@@ -26,7 +27,8 @@ using std::log10;
 
 using namespace std;
 
-
 #define PI acos(-1)
 
-double* SampleResult(int NStarStellar, int NStarRemnant, string IMFType);
+// Keep the legacy implementation available in RejectAndAcceptSample.cpp,
+// but route solver call sites through the deterministic implementation.
+#define SampleResult(...) SampleResultSeeded(__VA_ARGS__)
