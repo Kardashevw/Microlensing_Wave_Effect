@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
@@ -5,6 +6,7 @@
 #include <string>
 
 #include "./Micro_field_adaptive.h"
+#include "./ReproducibleRandom.h"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -20,6 +22,7 @@ int main(int argc, char* argv[])
     int thread_count = 8;
     int precision_factor = 10;
     int field_id = 15;
+    std::uint32_t seed = 12345;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -37,7 +40,8 @@ int main(int argc, char* argv[])
                 << "  --source-z VALUE\n"
                 << "  --threads VALUE\n"
                 << "  --precision-factor VALUE\n"
-                << "  --field-id VALUE\n";
+                << "  --field-id VALUE\n"
+                << "  --seed VALUE\n";
             return 0;
         }
 
@@ -67,6 +71,8 @@ int main(int argc, char* argv[])
                 precision_factor = stoi(value);
             else if (arg == "--field-id")
                 field_id = stoi(value);
+            else if (arg == "--seed")
+                seed = static_cast<std::uint32_t>(stoul(value));
             else
             {
                 cerr << "Unknown option: " << arg << endl;
@@ -103,6 +109,8 @@ int main(int argc, char* argv[])
     fs::create_directories("ResultMaximum_" + id);
     fs::create_directories("Freq_Time_Domain_Result_" + id);
 
+    SetSimulationSeed(seed);
+
     cout << "Simulation configuration:" << endl;
     cout << "  kappa            = " << kappa << endl;
     cout << "  gamma            = " << gamma << endl;
@@ -112,6 +120,7 @@ int main(int argc, char* argv[])
     cout << "  threads          = " << thread_count << endl;
     cout << "  precision_factor = " << precision_factor << endl;
     cout << "  field_id         = " << field_id << endl;
+    cout << "  seed             = " << seed << endl;
 
     return MainDiffraction(
         kappa,
