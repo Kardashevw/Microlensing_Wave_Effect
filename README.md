@@ -88,12 +88,12 @@ The one-shot runner selects:
 Here the code's amplitude convention is
 
 $$
-\sqrt{\|\mu\|}
+\sqrt{|\mu|}
 =
-\sqrt{\left\|\frac{1}{(1-\kappa)^2-\gamma^2}\right\|}.
+\sqrt{\left|\frac{1}{(1-\kappa)^2-\gamma^2}\right|}.
 $$
 
-The macro-only **magnitude** plotted for all three image types is therefore the same frequency-independent $\sqrt{\|\mu\|}$. The complex signs/phases are the Morse phases and matter for the phase output, not for the macro-only magnitude curve.
+The macro-only **magnitude** plotted for all three image types is therefore the same frequency-independent $\sqrt{|\mu|}$. The complex signs/phases are the Morse phases and matter for the phase output, not for the macro-only magnitude curve.
 
 The Type-II derivation in Shan et al. chooses $\lambda_r > 0$ and $\lambda_t < 0$ without loss of generality. The current C++ saddle branch implements that orientation explicitly, so the opposite orientation is detected but rejected rather than silently rotating/relabeling the numerical problem.
 
@@ -103,7 +103,7 @@ The frequency-domain helpers implement the Component Decomposition (CD) structur
 
 ### Minimum / Type I
 
-The maintained minimum treatment is unchanged. Its smooth time-domain component is constant for positive time, and the restored positive-frequency macro term is $+\sqrt{\|\mu\|}$, matching Eq. (19) of Shan et al. (2022).
+The maintained minimum treatment is unchanged. Its smooth time-domain component is constant for positive time, and the restored positive-frequency macro term is $+\sqrt{|\mu|}$, matching Eq. (19) of Shan et al. (2022).
 
 The current maintained implementation also uses an empirical three-fifths cut and a one-sided Hann taper on the **residual** before the explicit frequency integration. Those are practical implementation details inherited from the repository code; the paper's ideal CD derivation relies on the residual approaching zero at the statistical boundary and does not require apodizing the full time-domain signal.
 
@@ -113,11 +113,11 @@ The saddle helper ports the active Type-II finite-boundary equations into a stan
 
 1. read `ResultSaddle_<field-id>/` and `X1020New_*`,
 2. construct $\mathrm{d}A/\mathrm{d}t$,
-3. avoid an exact $t=0$ sample because the analytic smooth saddle contains $\log\|t\|$,
+3. avoid an exact $t=0$ sample because the analytic smooth saddle contains $\log|t|$,
 4. retain the middle three-fifths of the numerical time curve,
 5. subtract the finite-field analytic smooth response corresponding to the two hyperbolic regions,
 6. explicitly Fourier-transform the residual,
-7. restore $-i\sqrt{\|\mu\|}$ for the positive-frequency grid.
+7. restore $-i\sqrt{|\mu|}$ for the positive-frequency grid.
 
 This is the positive-frequency form of Eq. (32), where the paper gives $-i\,\mathrm{Sgn}(\omega)\sqrt{\mu}$.
 
@@ -131,7 +131,7 @@ Type III is implemented directly from Sec. 2.5 and Eq. (36) of Shan et al. (2022
 4. subtract the constant smooth Type-III time-domain component on $t<0$ (half weight at the $t=0$ endpoint),
 5. apply the mirrored one-sided residual taper used by the maintained Type-I helper,
 6. explicitly Fourier-transform the residual in the original negative-time coordinate,
-7. restore the analytic Type-III macro term $-\sqrt{\|\mu\|}$.
+7. restore the analytic Type-III macro term $-\sqrt{|\mu|}$.
 
 This follows the paper's statement that Type III uses the same CD method as Type I, with the infinite-time side reversed and the smooth frequency-domain contribution changing from $+\sqrt{\mu}$ to $-\sqrt{\mu}$.
 
@@ -160,10 +160,10 @@ full_over_macro
 phase_rad
 ```
 
-The comparison plot shows the full macro+microlensing amplitude $\|F(f)\|$ together with the macro-only amplitude
+The comparison plot shows the full macro+microlensing amplitude $|F(f)|$ together with the macro-only amplitude
 
 $$
-\sqrt{\left\|\frac{1}{(1-\kappa)^2-\gamma^2}\right\|}
+\sqrt{\left|\frac{1}{(1-\kappa)^2-\gamma^2}\right|}
 $$
 
 against frequency. `run_parameters.json` records the user-facing run inputs, including whether intermediate cleanup was enabled.
