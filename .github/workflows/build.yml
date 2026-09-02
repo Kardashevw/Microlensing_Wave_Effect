@@ -21,6 +21,7 @@ jobs:
           python -m py_compile
           scripts/run_pipeline.py
           scripts/render_outputs.py
+          scripts/output_contract.py
           scripts/image_type.py
           scripts/simulation_config.py
           scripts/fourier_minimum.py

@@ -8,16 +8,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import numpy as np
 
+from output_contract import PLOT_NAMES, clean_output_directory
 from simulation_config import SimulationConfig
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
-PLOT_NAMES = {
-    "minimum": "minimum_amplification_comparison.png",
-    "saddle": "saddle_amplification_comparison.png",
-    "maximum": "maximum_amplification_comparison.png",
-}
 
 
 def format_parameter_block(metadata: dict) -> str:
@@ -188,9 +183,11 @@ def main() -> None:
 
     amplification_plot = render_amplification_plot(metadata, output_dir)
     field_plot = render_stellar_field(metadata, output_dir)
+    clean_output_directory(output_dir, metadata, args.parameters)
 
     print("Parameter-annotated amplification plot:", amplification_plot)
     print("Stellar field realization plot:", field_plot)
+    print("Final frequency output directory contains only documented products.")
 
 
 if __name__ == "__main__":
