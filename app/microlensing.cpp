@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
         if (arg == "--help" || arg == "-h")
         {
             cout
-                << "Usage: ./Example [options]\n\n"
+                << "Usage: ./build/microlensing [options]\n\n"
                 << "Options:\n"
                 << "  --kappa VALUE\n"
                 << "  --gamma VALUE\n"
