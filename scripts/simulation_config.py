@@ -3,6 +3,9 @@ from pathlib import Path
 import argparse
 
 
+OUTPUT_ROOT = Path("outputs")
+
+
 @dataclass(frozen=True)
 class SimulationConfig:
     kappa: float
@@ -40,7 +43,7 @@ class SimulationConfig:
 
     @property
     def frequency_dir(self) -> Path:
-        return Path(f"Freq_Time_Domain_Result_{self.field_id}")
+        return OUTPUT_ROOT / f"Freq_Time_Domain_Result_{self.field_id}"
 
 
 def add_simulation_args(parser: argparse.ArgumentParser) -> None:
