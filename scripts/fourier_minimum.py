@@ -68,7 +68,7 @@ constant = 2.0 * np.pi * mu / coeff
 cw = coeff / (2.0 * np.pi)
 
 print(f"Average mass : {average_mass:.10f} Msun")
-print(f"Macro mu     : {mu:.10f}")
+print(f"Macro |F|    : {mu:.10f}")
 print(f"coeff        : {coeff:.10e} s")
 print(f"constant     : {constant:.10e}")
 print(f"cw           : {cw:.10e}")
@@ -150,6 +150,8 @@ Ff += constant * cw
 
 amplification = np.abs(Ff)
 phase = np.angle(Ff)
+macro_amplification = np.full_like(amplification, mu)
+normalized_amplification = amplification / mu
 
 print()
 print(f"Frequency bins : {freq.size}")
@@ -157,21 +159,49 @@ print(f"Frequency range: {freq[0]} -> {freq[-1]} Hz")
 print(f"|F| range      : {amplification.min():.6g} -> {amplification.max():.6g}")
 print(f"Phase range    : {phase.min():.6g} -> {phase.max():.6g} rad")
 print()
-print("Low-frequency |F| / mu:", amplification[0] / mu)
+print("Low-frequency |F| / macro |F|:", normalized_amplification[0])
 
 np.savetxt(output_dir / "frequency.csv", freq, delimiter=",")
 np.savetxt(output_dir / "minimum_amplification.csv", amplification, delimiter=",")
+np.savetxt(
+    output_dir / "macro_only_amplification.csv",
+    macro_amplification,
+    delimiter=",",
+)
+np.savetxt(
+    output_dir / "minimum_amplification_normalized.csv",
+    normalized_amplification,
+    delimiter=",",
+)
 np.savetxt(output_dir / "minimum_phase.csv", phase, delimiter=",")
+np.savetxt(
+    output_dir / "amplification_comparison.csv",
+    np.column_stack(
+        (
+            freq,
+            amplification,
+            macro_amplification,
+            normalized_amplification,
+            phase,
+        )
+    ),
+    delimiter=",",
+    header=(
+        "frequency_hz,full_amplification,macro_only_amplification,"
+        "full_over_macro,phase_rad"
+    ),
+    comments="",
+)
 
 plt.figure(figsize=(9, 5))
-plt.semilogx(freq, amplification / mu)
-plt.axhline(1.0, linestyle="--", label="Macro-only")
+plt.semilogx(freq, amplification, label="Macro + microlensing")
+plt.semilogx(freq, macro_amplification, linestyle="--", label="Macro only")
 plt.xlabel("Frequency [Hz]")
-plt.ylabel(r"$|F(f)|/\sqrt{|\mu|}$")
-plt.title("Microlensing amplification")
+plt.ylabel(r"Amplification factor $|F(f)|$")
+plt.title("Full and macro-only amplification")
 plt.legend()
 plt.tight_layout()
-plt.savefig(output_dir / "minimum_amplification.png", dpi=200)
+plt.savefig(output_dir / "minimum_amplification_comparison.png", dpi=200)
 plt.close()
 
 plt.figure(figsize=(9, 5))
@@ -186,3 +216,7 @@ plt.close()
 
 print()
 print(f"Results written to {output_dir}/")
+print(
+    "Comparison plot:",
+    output_dir / "minimum_amplification_comparison.png",
+)
