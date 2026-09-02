@@ -14,19 +14,60 @@ The preferred user-facing path is:
 
 ```text
 scripts/run_pipeline.py
+  -> classify image from kappa/gamma
   -> CMake build
   -> app/microlensing.cpp
   -> MainDiffraction(...) in src/Micro_field_adaptive.cpp
-  -> potential/adaptive-grid calculations in src/GetPsi_micro_field.cpp
-  -> deterministic sampling in src/ReproducibleRandom.cpp
-  -> generated binary outputs
-  -> scripts/fourier_minimum.py
+  -> generated branch-specific binary output
+  -> scripts/fourier_minimum.py | fourier_saddle.py | fourier_maximum.py
   -> full vs macro-only amplification comparison
 ```
 
 The one-shot runner owns parameter forwarding. A physical/numerical parameter entered by the user must be passed unchanged to the C++ and Python stages that consume it.
 
-`scripts/inspect_minimum.py` remains a manual validation helper. `legacy/` is reference material and is not part of the supported build.
+`legacy/` is reference material and is not part of the supported build.
+
+## Image classification and paper conventions
+
+Use the macro Jacobian eigenvalues
+
+```text
+lambda_r = 1 - kappa + gamma
+lambda_t = 1 - kappa - gamma
+```
+
+- minimum / Type I: both positive
+- saddle / Type II: opposite signs
+- maximum / Type III: both negative
+- critical: either exactly zero; reject
+
+Shan et al. (2022) derives Type II using `lambda_r > 0` and `lambda_t < 0` without loss of generality. The current C++ saddle branch implements that orientation explicitly. Do not silently rotate/relabel the opposite saddle orientation because that would require changing the C++ numerical branch.
+
+For positive frequency, the Component Decomposition smooth macro factors are
+
+```text
+minimum  +sqrt(|mu|)       (Type I, Eq. 19)
+saddle   -i sqrt(|mu|)     (Type II, Eq. 32 for omega > 0)
+maximum  -sqrt(|mu|)       (Type III, Eq. 36)
+```
+
+with
+
+```text
+sqrt(|mu|) = sqrt(abs(1 / ((1-kappa)^2 - gamma^2)))
+```
+
+The macro-only magnitude plotted in every branch is therefore the same `sqrt(|mu|)`.
+
+## Branch analysis rules
+
+- `scripts/fourier_minimum.py`: preserve the existing maintained Type-I transform, smooth subtraction/reconstruction, three-fifths cut, and residual taper. The taper is an implementation detail; the ideal paper CD derivation relies on the residual approaching zero at the statistical boundary.
+- `scripts/fourier_saddle.py`: preserve the Type-II finite-field analytic expressions corresponding to Eqs. (22), (24), and (32): subtract the finite smooth hyperbolic response and restore `-i sqrt(|mu|)` on the positive-frequency grid.
+- `scripts/fourier_maximum.py`: implement Type III directly as described in Sec. 2.5 / Eq. (36): choose the maximum delay as `t=0`, work on the negative-time side, subtract the constant smooth response there, transform the residual, and restore `-sqrt(|mu|)`. Mirror the maintained Type-I practical truncation/taper on the opposite time edge rather than introducing a separate time-reversal formulation.
+
+The maximum branch still needs a representative scientific smoke/convergence test before being treated as a golden validated analysis path.
+
+The 2024 TAAH paper changes how the time-domain area distribution is computed, but its final frequency-domain step explicitly calls the earlier Component Decomposition algorithm. Do not replace the CD post-processing with a different Fourier prescription merely because the C++ time-domain solver is newer.
 
 ## Build and environment
 
@@ -44,6 +85,10 @@ C++17 and the historical `-O3 -g` flags are intentional.
 ## Important paths
 
 - `scripts/run_pipeline.py`: preferred one-shot build/simulate/analyze entry point.
+- `scripts/image_type.py`: image classification and macro Morse-phase conventions.
+- `scripts/fourier_minimum.py`: minimum / Type-I Fourier helper.
+- `scripts/fourier_saddle.py`: saddle / Type-II Fourier helper.
+- `scripts/fourier_maximum.py`: maximum / Type-III Fourier helper.
 - `app/microlensing.cpp`: supported C++ CLI entry point.
 - `src/Micro_field_adaptive.cpp`: main adaptive algorithm; avoid unrelated edits.
 - `src/GetPsi_micro_field.cpp`: potential, adaptive-grid, and time-delay calculations; avoid unrelated edits.
@@ -52,26 +97,6 @@ C++17 and the historical `-O3 -g` flags are intentional.
 - `SampleMethod/Remnant_MF.csv`: runtime remnant mass-function data expected by the current sampler.
 - `scripts/simulation_config.py`: shared Python physical parameters and filename convention.
 - `scripts/inspect_minimum.py`: minimum-image binary validation/time-domain helper.
-- `scripts/fourier_minimum.py`: minimum-image Fourier helper and amplification comparison output.
-
-## Amplification output
-
-For the maintained minimum-image Fourier calculation, preserve the existing transform, smooth-component subtraction/reconstruction, truncation, and windowing logic.
-
-The full amplification is the existing numerical `abs(Ff)`. The macro-only amplitude plotted for comparison is
-
-```text
-sqrt(abs(1 / ((1 - kappa)^2 - gamma^2)))
-```
-
-Do not replace the existing numerical transform with a different FFT/integration implementation merely to simplify the workflow.
-
-The comparison outputs are written under `Freq_Time_Domain_Result_<field-id>/`, including:
-
-```text
-minimum_amplification_comparison.png
-amplification_comparison.csv
-```
 
 ## Reproducibility rules
 
@@ -87,11 +112,12 @@ At minimum:
 cmake -S . -B build
 cmake --build build -j
 ./build/microlensing --help
-python -m py_compile scripts/run_pipeline.py scripts/fourier_minimum.py
+python -m py_compile scripts/run_pipeline.py scripts/image_type.py scripts/simulation_config.py scripts/fourier_minimum.py scripts/fourier_saddle.py scripts/fourier_maximum.py
+python -m unittest discover -s tests
 uv run python scripts/run_pipeline.py --help
 ```
 
-For a scientific smoke run, use fixed physical parameters and seed. For reproducibility checks, run the same physical case and seed with two field IDs and compare corresponding `Lens_Mass_*.bin` and `MicroLensCoorXY_*.bin` files with `cmp` or hashes.
+For scientific smoke runs, keep physical parameters and seed fixed. For reproducibility checks, use distinct field IDs and compare corresponding `Lens_Mass_*.bin` and `MicroLensCoorXY_*.bin` files directly.
 
 ## Git workflow
 

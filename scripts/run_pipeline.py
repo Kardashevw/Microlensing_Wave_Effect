@@ -4,10 +4,29 @@ import shlex
 import subprocess
 import sys
 
+from image_type import (
+    ImageType,
+    classify_image,
+    jacobian_eigenvalues,
+    saddle_orientation_supported,
+)
 from simulation_config import add_simulation_args, config_from_args
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+ANALYSIS_SCRIPTS = {
+    ImageType.MINIMUM: "fourier_minimum.py",
+    ImageType.SADDLE: "fourier_saddle.py",
+    ImageType.MAXIMUM: "fourier_maximum.py",
+}
+
+PLOT_NAMES = {
+    ImageType.MINIMUM: "minimum_amplification_comparison.png",
+    ImageType.SADDLE: "saddle_amplification_comparison.png",
+    ImageType.MAXIMUM: "maximum_amplification_comparison.png",
+}
 
 
 def run_command(command: list[str]) -> None:
@@ -19,8 +38,9 @@ def run_command(command: list[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Build, run one minimum-image microlensing simulation, and produce "
-            "the full and macro-only frequency-domain amplification comparison."
+            "Build and run one microlensing simulation, automatically select "
+            "the minimum/saddle/maximum Fourier treatment from kappa and "
+            "gamma, and produce the full and macro-only amplification comparison."
         )
     )
     add_simulation_args(parser)
@@ -52,14 +72,24 @@ def main() -> None:
     if args.df <= 0:
         parser.error("--df must be > 0")
 
-    radial_eigenvalue = 1.0 - config.kappa + config.gamma
-    tangential_eigenvalue = 1.0 - config.kappa - config.gamma
-    if radial_eigenvalue <= 0 or tangential_eigenvalue <= 0:
+    try:
+        image_type = classify_image(config.kappa, config.gamma)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+    radial, tangential = jacobian_eigenvalues(config.kappa, config.gamma)
+    if image_type is ImageType.SADDLE and not saddle_orientation_supported(
+        config.kappa, config.gamma
+    ):
         parser.error(
-            "The maintained one-shot Fourier workflow currently supports the "
-            "minimum-image branch only: both 1-kappa+gamma and "
-            "1-kappa-gamma must be > 0."
+            "This is a saddle image, but the current C++ saddle branch only "
+            "supports 1-kappa+gamma > 0 and 1-kappa-gamma < 0. Supporting "
+            "the opposite orientation would require a numerical C++ change."
         )
+
+    print("Detected macro image type:", image_type.value)
+    print(f"  1-kappa+gamma = {radial:.10g}")
+    print(f"  1-kappa-gamma = {tangential:.10g}")
 
     if not args.skip_build:
         run_command(["cmake", "-S", ".", "-B", "build"])
@@ -94,9 +124,10 @@ def main() -> None:
     ]
     run_command(simulation_command)
 
+    analysis_script = REPO_ROOT / "scripts" / ANALYSIS_SCRIPTS[image_type]
     fourier_command = [
         sys.executable,
-        str(REPO_ROOT / "scripts" / "fourier_minimum.py"),
+        str(analysis_script),
         "--kappa",
         str(config.kappa),
         "--gamma",
@@ -121,9 +152,10 @@ def main() -> None:
     output_dir = REPO_ROOT / config.frequency_dir
     print()
     print("Pipeline complete.")
+    print("Image type:", image_type.value)
     print(
         "Amplification comparison plot:",
-        output_dir / "minimum_amplification_comparison.png",
+        output_dir / PLOT_NAMES[image_type],
     )
     print(
         "Amplification comparison data:",
