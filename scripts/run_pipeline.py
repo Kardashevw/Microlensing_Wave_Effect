@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 import shlex
 import subprocess
@@ -33,6 +34,40 @@ def run_command(command: list[str]) -> None:
     print()
     print("$", shlex.join(str(part) for part in command))
     subprocess.run(command, cwd=REPO_ROOT, check=True)
+
+
+def write_run_parameters(
+    path: Path,
+    *,
+    args: argparse.Namespace,
+    config,
+    image_type: ImageType,
+    radial: float,
+    tangential: float,
+) -> None:
+    metadata = {
+        "image_type": image_type.value,
+        "inputs": {
+            "kappa": config.kappa,
+            "gamma": config.gamma,
+            "kappa_star": config.kappa_star,
+            "lens_z": config.lens_z,
+            "source_z": config.source_z,
+            "threads": args.threads,
+            "precision_factor": args.precision_factor,
+            "field_id": config.field_id,
+            "seed": args.seed,
+            "f_min": args.f_min,
+            "f_max": args.f_max,
+            "df": args.df,
+            "skip_build": args.skip_build,
+        },
+        "derived": {
+            "lambda_r": radial,
+            "lambda_t": tangential,
+        },
+    }
+    path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def main() -> None:
@@ -124,6 +159,18 @@ def main() -> None:
     ]
     run_command(simulation_command)
 
+    output_dir = REPO_ROOT / config.frequency_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    parameters_path = output_dir / "run_parameters.json"
+    write_run_parameters(
+        parameters_path,
+        args=args,
+        config=config,
+        image_type=image_type,
+        radial=radial,
+        tangential=tangential,
+    )
+
     analysis_script = REPO_ROOT / "scripts" / ANALYSIS_SCRIPTS[image_type]
     fourier_command = [
         sys.executable,
@@ -149,10 +196,18 @@ def main() -> None:
     ]
     run_command(fourier_command)
 
-    output_dir = REPO_ROOT / config.frequency_dir
+    render_command = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "render_outputs.py"),
+        "--parameters",
+        str(parameters_path),
+    ]
+    run_command(render_command)
+
     print()
     print("Pipeline complete.")
     print("Image type:", image_type.value)
+    print("Run parameters:", parameters_path)
     print(
         "Amplification comparison plot:",
         output_dir / PLOT_NAMES[image_type],
@@ -160,6 +215,10 @@ def main() -> None:
     print(
         "Amplification comparison data:",
         output_dir / "amplification_comparison.csv",
+    )
+    print(
+        "Stellar field realization plot:",
+        output_dir / "stellar_field_realization.png",
     )
 
 
