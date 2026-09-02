@@ -8,6 +8,8 @@ Treat the numerical implementation as research code, not application code. Do no
 
 Prefer structural, isolated, testable edits. Avoid broad formatting passes over the large numerical source files.
 
+For Markdown documentation, write mathematical expressions with `$...$` for inline math and `$$...$$` for display math. Do not put equations in backticks or fenced `text` blocks when they are intended to render as mathematics.
+
 ## Maintained workflow
 
 The preferred user-facing path is:
@@ -35,39 +37,44 @@ Final one-shot products live under `outputs/`. During calculation the C++ solver
 
 Use the macro Jacobian eigenvalues
 
-```text
-lambda_r = 1 - kappa + gamma
-lambda_t = 1 - kappa - gamma
-```
+$$
+\lambda_r = 1 - \kappa + \gamma,
+\qquad
+\lambda_t = 1 - \kappa - \gamma.
+$$
 
-- minimum / Type I: both positive
-- saddle / Type II: opposite signs
-- maximum / Type III: both negative
-- critical: either exactly zero; reject
+- minimum / Type I: $\lambda_r>0$ and $\lambda_t>0$
+- saddle / Type II: the eigenvalues have opposite signs
+- maximum / Type III: $\lambda_r<0$ and $\lambda_t<0$
+- critical: either eigenvalue is exactly zero; reject
 
-Shan et al. (2022) derives Type II using `lambda_r > 0` and `lambda_t < 0` without loss of generality. The current C++ saddle branch implements that orientation explicitly. Do not silently rotate/relabel the opposite saddle orientation because that would require changing the C++ numerical branch.
+Shan et al. (2022) derives Type II using $\lambda_r>0$ and $\lambda_t<0$ without loss of generality. The current C++ saddle branch implements that orientation explicitly. Do not silently rotate/relabel the opposite saddle orientation because that would require changing the C++ numerical branch.
 
 For positive frequency, the Component Decomposition smooth macro factors are
 
-```text
-minimum  +sqrt(|mu|)       (Type I, Eq. 19)
-saddle   -i sqrt(|mu|)     (Type II, Eq. 32 for omega > 0)
-maximum  -sqrt(|mu|)       (Type III, Eq. 36)
-```
+$$
+\begin{aligned}
+\text{minimum:}\quad &+\sqrt{|\mu|} &&\text{(Type I, Eq. 19)},\\
+\text{saddle:}\quad &-i\sqrt{|\mu|} &&\text{(Type II, Eq. 32 for }\omega>0\text{)},\\
+\text{maximum:}\quad &-\sqrt{|\mu|} &&\text{(Type III, Eq. 36)}.
+\end{aligned}
+$$
 
 with
 
-```text
-sqrt(|mu|) = sqrt(abs(1 / ((1-kappa)^2 - gamma^2)))
-```
+$$
+\sqrt{|\mu|}
+=
+\sqrt{\left|\frac{1}{(1-\kappa)^2-\gamma^2}\right|}.
+$$
 
-The macro-only magnitude plotted in every branch is therefore the same `sqrt(|mu|)`.
+The macro-only magnitude plotted in every branch is therefore the same $\sqrt{|\mu|}$.
 
 ## Branch analysis rules
 
 - `scripts/fourier_minimum.py`: preserve the existing maintained Type-I transform, smooth subtraction/reconstruction, three-fifths cut, and residual taper. The taper is an implementation detail; the ideal paper CD derivation relies on the residual approaching zero at the statistical boundary.
-- `scripts/fourier_saddle.py`: preserve the Type-II finite-field analytic expressions corresponding to Eqs. (22), (24), and (32): subtract the finite smooth hyperbolic response and restore `-i sqrt(|mu|)` on the positive-frequency grid.
-- `scripts/fourier_maximum.py`: implement Type III directly as described in Sec. 2.5 / Eq. (36): choose the maximum delay as `t=0`, work on the negative-time side, subtract the constant smooth response there, transform the residual, and restore `-sqrt(|mu|)`. Mirror the maintained Type-I practical truncation/taper on the opposite time edge rather than introducing a separate time-reversal formulation.
+- `scripts/fourier_saddle.py`: preserve the Type-II finite-field analytic expressions corresponding to Eqs. (22), (24), and (32): subtract the finite smooth hyperbolic response and restore $-i\sqrt{|\mu|}$ on the positive-frequency grid.
+- `scripts/fourier_maximum.py`: implement Type III directly as described in Sec. 2.5 / Eq. (36): choose the maximum delay as $t=0$, work on the negative-time side, subtract the constant smooth response there, transform the residual, and restore $-\sqrt{|\mu|}$. Mirror the maintained Type-I practical truncation/taper on the opposite time edge rather than introducing a separate time-reversal formulation.
 
 The maximum branch still needs a representative scientific smoke/convergence test before being treated as a golden validated analysis path.
 

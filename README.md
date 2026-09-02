@@ -36,7 +36,7 @@ uv sync
 
 Use `scripts/run_pipeline.py`. Enter the simulation and frequency parameters once; the runner then:
 
-1. classifies the macro image from `kappa` and `gamma`,
+1. classifies the macro image from $\kappa$ and $\gamma$,
 2. configures and incrementally builds the existing C++ solver,
 3. runs the microlensing simulation,
 4. reads the matching minimum/saddle/maximum binary output,
@@ -71,28 +71,31 @@ Intermediate cleanup is enabled by default. Use `--no-remove-intermediate` when 
 
 Define the two macro Jacobian eigenvalues
 
-```text
-lambda_r = 1 - kappa + gamma
-lambda_t = 1 - kappa - gamma
-```
+$$
+\lambda_r = 1 - \kappa + \gamma,
+\qquad
+\lambda_t = 1 - \kappa - \gamma.
+$$
 
 The one-shot runner selects:
 
 | Image | Condition | Analysis helper | Smooth positive-frequency macro factor |
 | --- | --- | --- | --- |
-| Minimum (Type I) | `lambda_r > 0`, `lambda_t > 0` | `scripts/fourier_minimum.py` | `+sqrt(|mu|)` |
-| Saddle (Type II) | `lambda_r > 0`, `lambda_t < 0` | `scripts/fourier_saddle.py` | `-i sqrt(|mu|)` |
-| Maximum (Type III) | `lambda_r < 0`, `lambda_t < 0` | `scripts/fourier_maximum.py` | `-sqrt(|mu|)` |
+| Minimum (Type I) | $\lambda_r > 0$, $\lambda_t > 0$ | `scripts/fourier_minimum.py` | $+\sqrt{|\mu|}$ |
+| Saddle (Type II) | $\lambda_r > 0$, $\lambda_t < 0$ | `scripts/fourier_saddle.py` | $-i\sqrt{|\mu|}$ |
+| Maximum (Type III) | $\lambda_r < 0$, $\lambda_t < 0$ | `scripts/fourier_maximum.py` | $-\sqrt{|\mu|}$ |
 
 Here the code's amplitude convention is
 
-```text
-sqrt(|mu|) = sqrt(abs(1 / ((1-kappa)^2 - gamma^2)))
-```
+$$
+\sqrt{|\mu|}
+=
+\sqrt{\left|\frac{1}{(1-\kappa)^2-\gamma^2}\right|}.
+$$
 
-so the macro-only **magnitude** plotted for all three image types is the same frequency-independent `sqrt(|mu|)`. The complex signs/phases are the Morse phases and matter for the phase output, not for the macro-only magnitude curve.
+The macro-only **magnitude** plotted for all three image types is therefore the same frequency-independent $\sqrt{|\mu|}$. The complex signs/phases are the Morse phases and matter for the phase output, not for the macro-only magnitude curve.
 
-The Type-II derivation in Shan et al. chooses `lambda_r > 0`, `lambda_t < 0` without loss of generality. The current C++ saddle branch implements that orientation explicitly, so the opposite orientation is detected but rejected rather than silently rotating/relabeling the numerical problem.
+The Type-II derivation in Shan et al. chooses $\lambda_r > 0$ and $\lambda_t < 0$ without loss of generality. The current C++ saddle branch implements that orientation explicitly, so the opposite orientation is detected but rejected rather than silently rotating/relabeling the numerical problem.
 
 ## Branch-specific Fourier treatment
 
@@ -100,7 +103,7 @@ The frequency-domain helpers implement the Component Decomposition (CD) structur
 
 ### Minimum / Type I
 
-The maintained minimum treatment is unchanged. Its smooth time-domain component is constant for positive time, and the restored positive-frequency macro term is `+sqrt(|mu|)`, matching Eq. (19) of Shan et al. (2022).
+The maintained minimum treatment is unchanged. Its smooth time-domain component is constant for positive time, and the restored positive-frequency macro term is $+\sqrt{|\mu|}$, matching Eq. (19) of Shan et al. (2022).
 
 The current maintained implementation also uses an empirical three-fifths cut and a one-sided Hann taper on the **residual** before the explicit frequency integration. Those are practical implementation details inherited from the repository code; the paper's ideal CD derivation relies on the residual approaching zero at the statistical boundary and does not require apodizing the full time-domain signal.
 
@@ -109,28 +112,28 @@ The current maintained implementation also uses an empirical three-fifths cut an
 The saddle helper ports the active Type-II finite-boundary equations into a standalone workflow:
 
 1. read `ResultSaddle_<field-id>/` and `X1020New_*`,
-2. construct `dA/dt`,
-3. avoid an exact `t=0` sample because the analytic smooth saddle contains `log(|t|)`,
+2. construct $\mathrm{d}A/\mathrm{d}t$,
+3. avoid an exact $t=0$ sample because the analytic smooth saddle contains $\log|t|$,
 4. retain the middle three-fifths of the numerical time curve,
 5. subtract the finite-field analytic smooth response corresponding to the two hyperbolic regions,
 6. explicitly Fourier-transform the residual,
-7. restore `-i sqrt(|mu|)` for the positive-frequency grid.
+7. restore $-i\sqrt{|\mu|}$ for the positive-frequency grid.
 
-This is the positive-frequency form of Eq. (32), where the paper gives `-i Sgn(omega) sqrt(mu)`.
+This is the positive-frequency form of Eq. (32), where the paper gives $-i\,\mathrm{Sgn}(\omega)\sqrt{\mu}$.
 
 ### Maximum / Type III
 
 Type III is implemented directly from Sec. 2.5 and Eq. (36) of Shan et al. (2022), rather than through an additional time-reversal identity:
 
 1. read the existing `ResultMaximum_<field-id>/` output,
-2. identify the final nonzero maximum response and choose that maximum delay as `t=0`,
+2. identify the final nonzero maximum response and choose that maximum delay as $t=0$,
 3. retain the corresponding final three-fifths of the time series, mirroring the maintained Type-I practical truncation,
-4. subtract the constant smooth Type-III time-domain component on `t < 0` (half weight at the `t=0` endpoint),
+4. subtract the constant smooth Type-III time-domain component on $t<0$ (half weight at the $t=0$ endpoint),
 5. apply the mirrored one-sided residual taper used by the maintained Type-I helper,
 6. explicitly Fourier-transform the residual in the original negative-time coordinate,
-7. restore the analytic Type-III macro term `-sqrt(|mu|)`.
+7. restore the analytic Type-III macro term $-\sqrt{|\mu|}$.
 
-This follows the paper's statement that Type III uses the same CD method as Type I, with the infinite-time side reversed and the smooth frequency-domain contribution changing from `+sqrt(mu)` to `-sqrt(mu)`.
+This follows the paper's statement that Type III uses the same CD method as Type I, with the infinite-time side reversed and the smooth frequency-domain contribution changing from $+\sqrt{\mu}$ to $-\sqrt{\mu}$.
 
 The maximum branch should still receive a representative scientific smoke/convergence test before being treated as a golden validated path, especially because the repository previously lacked a maintained standalone Type-III post-processing helper.
 
@@ -157,12 +160,11 @@ full_over_macro
 phase_rad
 ```
 
-The comparison plot shows
+The comparison plot shows the full macro+microlensing amplitude $|F(f)|$ together with the macro-only amplitude
 
-```text
-Macro + microlensing: |F(f)|
-Macro only:            sqrt(abs(1 / ((1-kappa)^2 - gamma^2)))
-```
+$$
+\sqrt{\left|\frac{1}{(1-\kappa)^2-\gamma^2}\right|}
+$$
 
 against frequency. `run_parameters.json` records the user-facing run inputs, including whether intermediate cleanup was enabled.
 
