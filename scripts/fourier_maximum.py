@@ -67,11 +67,11 @@ def main() -> None:
     if n_samples < 3:
         raise RuntimeError("Not enough maximum time samples")
 
-    mu = macro_amplitude(config.kappa, config.gamma)
+    amplitude = macro_amplitude(config.kappa, config.gamma)
     coeff = 4.0 * G * average_mass * M_SUN * (1.0 + config.lens_z) / C**3
-    constant = 2.0 * np.pi * mu / coeff
+    constant = 2.0 * np.pi * amplitude / coeff
     cw = coeff / (2.0 * np.pi)
-    macro_factor = macro_complex_factor(ImageType.MAXIMUM, mu)
+    macro_factor = macro_complex_factor(ImageType.MAXIMUM, amplitude)
 
     dt_array = np.diff(time)
     if not np.allclose(dt_array, dt_array[0]):
@@ -86,52 +86,53 @@ def main() -> None:
     if nonzero.size == 0:
         raise RuntimeError("No positive maximum-image area-rate samples found")
 
-    # The C++ maximum branch pads the high-time side.  Keep data through the
-    # final nonzero response, then reverse about that endpoint.  In tau =
-    # T_max - T the smooth maximum has the same positive constant dA/dtau as a
-    # smooth minimum, so the existing minimum residual treatment can be used
-    # without changing the solver output or its sampling.
+    # Shan et al. (2022), Sec. 2.5: Type III uses the same component
+    # decomposition as Type I, but the smooth response is supported on t <= 0
+    # and the maximum delay is chosen as the time origin.  Mirror the existing
+    # Type-I practical truncation about that maximum while keeping the transform
+    # in the original time coordinate.
     end = nonzero[-1] + 1
-    ft_reversed = ft_raw[:end][::-1].copy()
-    time_kept = time_raw[:end]
-    time_reversed = time_kept[-1] - time_kept[::-1]
+    kept_length = end
+    cut = 3 * kept_length // 5
+    start = end - cut
+    time_new = time_raw[start:end].copy()
+    ft_residual = ft_raw[start:end].copy()
+    if time_new.size < 2:
+        raise RuntimeError("Maximum three-fifths cut left too few samples")
 
-    length = len(time_reversed)
-    cut = 3 * length // 5
-    time_reversed = time_reversed[:cut].copy()
-    ft_reversed = ft_reversed[:cut].copy()
-    if time_reversed.size < 2:
-        raise RuntimeError("Maximum reversed three-fifths cut left too few samples")
+    # Choose the maximum delay as zero, as in Eq. (33)-(36) of Shan et al.
+    time_new -= time_new[-1]
 
-    ft_reversed[1:] -= constant
-    ft_reversed[0] -= constant / 2.0
+    # Smooth Type-III time-domain component: constant for t < 0, with the
+    # half-weight endpoint convention at t = 0 mirroring the maintained
+    # Type-I implementation.
+    ft_residual[:-1] -= constant
+    ft_residual[-1] -= constant / 2.0
 
-    length = len(ft_reversed)
+    # The maintained Type-I helper applies a one-sided Hann taper only to the
+    # residual edge.  Mirror that implementation detail on the left edge for
+    # Type III; the analytic smooth component itself is restored exactly below.
+    length = len(ft_residual)
     window_length = 2 * length // 5
     if window_length > 1:
         window = np.hanning(window_length)
-        tail_start = 4 * length // 5
-        tail_length = length - tail_start
-        if tail_length > 0:
-            ft_reversed[tail_start:] *= window[-tail_length:]
+        head_length = length - 4 * length // 5
+        if head_length > 0:
+            ft_residual[:head_length] *= window[:head_length]
 
+    np.savetxt(output_dir / "maximum_time.csv", time_new, delimiter=",")
     np.savetxt(
-        output_dir / "maximum_reversed_time.csv",
-        time_reversed,
-        delimiter=",",
-    )
-    np.savetxt(
-        output_dir / "maximum_reversed_ft_residual.csv",
-        ft_reversed,
+        output_dir / "maximum_ft_residual.csv",
+        ft_residual,
         delimiter=",",
     )
 
     plt.figure(figsize=(9, 5))
-    plt.plot(time_reversed, ft_reversed)
+    plt.plot(time_new, ft_residual)
     plt.axhline(0.0, linestyle="--")
-    plt.xlabel(r"Reversed time from maximum $\tau$ [s]")
-    plt.ylabel(r"$F(\tau)-F_{\rm smooth}(\tau)$")
-    plt.title("Maximum microlensing reversed time-domain residual")
+    plt.xlabel("Time from maximum [s]")
+    plt.ylabel(r"$F(t)-F_{\rm smooth}(t)$")
+    plt.title("Maximum microlensing time-domain residual")
     plt.tight_layout()
     plt.savefig(output_dir / "maximum_time_residual.png", dpi=200)
     plt.close()
@@ -144,23 +145,20 @@ def main() -> None:
     f_imag = np.empty(freq.size)
 
     for i, w in enumerate(omega):
-        f_real[i] = np.sum(ft_reversed * np.cos(w * time_reversed)) * dt
-        f_imag[i] = np.sum(ft_reversed * np.sin(w * time_reversed)) * dt
+        f_real[i] = np.sum(ft_residual * np.cos(w * time_new)) * dt
+        f_imag[i] = np.sum(ft_residual * np.sin(w * time_new)) * dt
 
-    integral_reversed = f_real + 1j * f_imag
-    minimum_form_factor = integral_reversed * omega / 1j * cw
-    minimum_form_factor += mu
+    integral = f_real + 1j * f_imag
+    full_factor = integral * omega / 1j * cw
 
-    # For T = T_max - tau and real F(tau), the original positive-frequency
-    # response is the negative complex conjugate of the reversed positive
-    # quadratic response when T_max is chosen as phase origin.  This restores
-    # the maximum Morse phase: smooth F = -sqrt(|mu|).
-    full_factor = -np.conjugate(minimum_form_factor)
+    # Shan et al. (2022), Eq. (36): for a Type-III image and nonzero
+    # frequency, restore the analytic smooth macro contribution -sqrt(mu).
+    full_factor += macro_factor
 
     amplification = np.abs(full_factor)
     phase = np.angle(full_factor)
-    macro_only = np.full_like(amplification, mu)
-    normalized = amplification / mu
+    macro_only = np.full_like(amplification, amplitude)
+    normalized = amplification / amplitude
 
     np.savetxt(output_dir / "frequency.csv", freq, delimiter=",")
     np.savetxt(output_dir / "maximum_amplification.csv", amplification, delimiter=",")
@@ -204,7 +202,7 @@ def main() -> None:
     print(f"Average mass      : {average_mass:.10f} Msun")
     print(f"Lens count        : {n_lenses:.0f}")
     print(f"L2 grid length    : {l2_length:.0f}")
-    print(f"Macro |F|         : {mu:.10f}")
+    print(f"Macro |F|         : {amplitude:.10f}")
     print(f"Macro complex F   : {macro_factor}")
     print(f"Frequency bins    : {freq.size}")
     print(f"|F| range         : {amplification.min():.6g} -> {amplification.max():.6g}")
