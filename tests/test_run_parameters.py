@@ -32,6 +32,7 @@ class RunParameterOutputTests(unittest.TestCase):
             f_max=1500.0,
             df=0.5,
             skip_build=True,
+            remove_intermediate=True,
         )
 
         with tempfile.TemporaryDirectory() as directory:
@@ -63,6 +64,7 @@ class RunParameterOutputTests(unittest.TestCase):
                 "f_max": 1500.0,
                 "df": 0.5,
                 "skip_build": True,
+                "remove_intermediate": True,
             },
         )
         self.assertEqual(

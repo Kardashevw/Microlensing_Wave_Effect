@@ -2,6 +2,7 @@ import argparse
 import json
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 import sys
 
@@ -36,6 +37,32 @@ def run_command(command: list[str]) -> None:
     subprocess.run(command, cwd=REPO_ROOT, check=True)
 
 
+def intermediate_directories(repo_root: Path, config) -> list[Path]:
+    return [
+        repo_root / config.micro_dir,
+        repo_root / config.minimum_dir,
+        repo_root / config.saddle_dir,
+        repo_root / config.maximum_dir,
+    ]
+
+
+def remove_intermediate_directories(repo_root: Path, config) -> list[Path]:
+    """Remove only this run's solver-generated intermediate directories."""
+    candidates = [path for path in intermediate_directories(repo_root, config) if path.exists()]
+
+    for path in candidates:
+        if path.is_symlink() or not path.is_dir():
+            raise RuntimeError(
+                "Refusing to remove an intermediate path that is not a real directory: "
+                f"{path}"
+            )
+
+    for path in candidates:
+        shutil.rmtree(path)
+
+    return candidates
+
+
 def write_run_parameters(
     path: Path,
     *,
@@ -61,6 +88,7 @@ def write_run_parameters(
             "f_max": args.f_max,
             "df": args.df,
             "skip_build": args.skip_build,
+            "remove_intermediate": args.remove_intermediate,
         },
         "derived": {
             "lambda_r": radial,
@@ -89,6 +117,16 @@ def main() -> None:
         "--skip-build",
         action="store_true",
         help="Reuse an existing build/microlensing executable.",
+    )
+    parser.add_argument(
+        "--remove-intermediate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Remove MicroField_<field-id> and ResultMinimum/Saddle/Maximum_<field-id> "
+            "after all final products are safely rendered (default: enabled). "
+            "Use --no-remove-intermediate to keep them."
+        ),
     )
 
     args = parser.parse_args()
@@ -204,9 +242,14 @@ def main() -> None:
     ]
     run_command(render_command)
 
+    removed_intermediate: list[Path] = []
+    if args.remove_intermediate:
+        removed_intermediate = remove_intermediate_directories(REPO_ROOT, config)
+
     print()
     print("Pipeline complete.")
     print("Image type:", image_type.value)
+    print("Final output directory:", output_dir)
     print("Run parameters:", parameters_path)
     print(
         "Amplification comparison plot:",
@@ -220,6 +263,15 @@ def main() -> None:
         "Stellar field realization plot:",
         output_dir / "stellar_field_realization.png",
     )
+    if args.remove_intermediate:
+        print("Removed intermediate directories:")
+        if removed_intermediate:
+            for path in removed_intermediate:
+                print(" ", path)
+        else:
+            print("  none found")
+    else:
+        print("Intermediate directories kept (--no-remove-intermediate).")
 
 
 if __name__ == "__main__":

@@ -15,12 +15,13 @@ legacy/python/          original research-analysis scripts
 scripts/                maintained Python workflow/analysis helpers
 tests/                  lightweight workflow/convention tests
 SampleMethod/           runtime remnant mass-function data
+outputs/                generated final one-shot results (git-ignored)
 CMakeLists.txt           supported C++ build
 pyproject.toml           Python environment/dependencies
 shell.nix                Nix development environment
 ```
 
-Generated simulation directories are intentionally excluded from version control.
+Generated simulation directories and `outputs/` are intentionally excluded from version control.
 
 ## Environment
 
@@ -40,7 +41,9 @@ Use `scripts/run_pipeline.py`. Enter the simulation and frequency parameters onc
 3. runs the microlensing simulation,
 4. reads the matching minimum/saddle/maximum binary output,
 5. applies the appropriate Fourier treatment,
-6. plots the full macro+microlensing amplification and macro-only amplification on the same frequency axis.
+6. plots the full macro+microlensing amplification and macro-only amplification on the same frequency axis,
+7. keeps only the four documented final products under `outputs/`,
+8. removes the solver intermediate directories by default after all final products are safely rendered.
 
 Example:
 
@@ -61,6 +64,8 @@ uv run python scripts/run_pipeline.py \
 ```
 
 After the first build, add `--skip-build` to reuse `build/microlensing`.
+
+Intermediate cleanup is enabled by default. Use `--no-remove-intermediate` when you need to retain `MicroField_<field-id>/` and the three `Result*_<field-id>/` directories for debugging, reproducibility checks, or lower-level analysis. The explicit Boolean pair is `--remove-intermediate` / `--no-remove-intermediate`.
 
 ### Automatic image classification
 
@@ -131,13 +136,18 @@ The maximum branch should still receive a representative scientific smoke/conver
 
 ## Outputs
 
-The final comparison data is always
+A completed one-shot run leaves exactly four final files in a dedicated output tree:
 
 ```text
-Freq_Time_Domain_Result_<field-id>/amplification_comparison.csv
+outputs/
+└── Freq_Time_Domain_Result_<field-id>/
+    ├── run_parameters.json
+    ├── amplification_comparison.csv
+    ├── <image-type>_amplification_comparison.png
+    └── stellar_field_realization.png
 ```
 
-with columns
+`amplification_comparison.csv` contains
 
 ```text
 frequency_hz
@@ -147,22 +157,16 @@ full_over_macro
 phase_rad
 ```
 
-The final comparison plot is branch-specific:
-
-```text
-minimum_amplification_comparison.png
-saddle_amplification_comparison.png
-maximum_amplification_comparison.png
-```
-
-Each plot shows
+The comparison plot shows
 
 ```text
 Macro + microlensing: |F(f)|
 Macro only:            sqrt(abs(1 / ((1-kappa)^2 - gamma^2)))
 ```
 
-against frequency.
+against frequency. `run_parameters.json` records the user-facing run inputs, including whether intermediate cleanup was enabled.
+
+See `docs/output_products.md` for the final-output and cleanup contract.
 
 ## Manual lower-level workflow
 
@@ -196,34 +200,42 @@ uv run python scripts/fourier_saddle.py   ...
 uv run python scripts/fourier_maximum.py  ...
 ```
 
-The helpers accept the same physical parameters, `field-id`, `--f-min`, `--f-max`, and `--df` arguments as the one-shot workflow.
+The helpers accept the same physical parameters, `field-id`, `--f-min`, `--f-max`, and `--df` arguments as the one-shot workflow. Their frequency-domain products are written under `outputs/Freq_Time_Domain_Result_<field-id>/` through the shared simulation configuration. Manual lower-level execution does not invoke the one-shot intermediate-directory cleanup.
 
 Shared physical parameters and filename conventions live in `scripts/simulation_config.py`. `scripts/inspect_minimum.py` remains the maintained minimum-image binary inspection helper.
 
-## Output directories
+## Output directories and cleanup
 
-`field-id` identifies output directories and is not a physical parameter or random seed. A run creates directories such as:
+`field-id` identifies output directories and is not a physical parameter or random seed. During a run the numerical solver creates root-level intermediate directories such as:
 
 ```text
 MicroField_10/
 ResultMinimum_10/
 ResultSaddle_10/
 ResultMaximum_10/
-Freq_Time_Domain_Result_10/
+```
+
+The one-shot pipeline needs those directories through Fourier analysis and stellar-field rendering. After successful final rendering, it removes all four by default, including the binary files inside them. Pass `--no-remove-intermediate` to keep them.
+
+Final deliverables are retained separately under:
+
+```text
+outputs/Freq_Time_Domain_Result_10/
 ```
 
 ## Reproducibility
 
-For numerical comparisons:
+For numerical comparisons that require the generated lens masses/coordinates:
 
 1. Keep physical parameters fixed.
 2. Keep `--seed` fixed.
 3. Use distinct `--field-id` values to avoid overwrites.
-4. Compare generated lens mass and coordinate files directly.
+4. Add `--no-remove-intermediate` so the generated binary files remain available.
+5. Compare corresponding `Lens_Mass_*.bin` and `MicroLensCoorXY_*.bin` files directly.
 
 The maintained RNG implementation keeps mass and coordinate streams independent. Workflow changes do not modify that implementation.
 
-Generated output filenames encode physical parameters to two decimal places. Avoid sweeps that differ only beyond two decimal places unless the naming scheme is deliberately redesigned.
+Generated binary filenames encode physical parameters to two decimal places. Avoid sweeps that differ only beyond two decimal places unless the naming scheme is deliberately redesigned.
 
 ## Binary-format assumptions
 

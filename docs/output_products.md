@@ -2,14 +2,15 @@
 
 The one-shot workflow records the full user input set and renders two final diagnostic products after the branch-specific Fourier calculation has completed.
 
-For `field-id = N`, the completed one-shot pipeline leaves **exactly four files** under `Freq_Time_Domain_Result_N/`:
+For `field-id = N`, the completed one-shot pipeline leaves **exactly four final files** under the dedicated `outputs/` tree:
 
 ```text
-Freq_Time_Domain_Result_<field-id>/
-├── run_parameters.json
-├── amplification_comparison.csv
-├── <image-type>_amplification_comparison.png
-└── stellar_field_realization.png
+outputs/
+└── Freq_Time_Domain_Result_<field-id>/
+    ├── run_parameters.json
+    ├── amplification_comparison.csv
+    ├── <image-type>_amplification_comparison.png
+    └── stellar_field_realization.png
 ```
 
 The files are:
@@ -21,8 +22,30 @@ The files are:
 
 The branch-specific Fourier helpers still create their historical diagnostic/intermediate files while they run. After the final plots have been rendered, `scripts/render_outputs.py` verifies that all four documented products exist, removes every other entry from the frequency-result directory, and verifies the exact four-file set again. This also removes stale diagnostics left by an earlier run using the same `field-id`.
 
-If a required final product is missing, cleanup aborts before deleting any intermediate files so the failed run remains inspectable.
+If a required final product is missing, final-output cleanup aborts before deleting any Fourier diagnostics so the failed run remains inspectable.
 
-This cleanup applies to the supported one-shot pipeline. Running `scripts/fourier_minimum.py`, `scripts/fourier_saddle.py`, or `scripts/fourier_maximum.py` manually remains a lower-level diagnostic workflow and can still leave their additional analysis products in the directory.
+## Solver intermediate directories
 
-The renderer is deliberately downstream of the numerical calculation. It reads existing solver/Fourier outputs and does not modify the C++ adaptive algorithm, random streams, time-delay calculation, component decomposition, or Fourier integration.
+During the calculation, the C++ solver still writes its existing field/result directories at the repository root because those paths are part of the current numerical implementation:
+
+```text
+MicroField_<field-id>/
+ResultMinimum_<field-id>/
+ResultSaddle_<field-id>/
+ResultMaximum_<field-id>/
+```
+
+Once the Fourier analysis and stellar-field rendering have completed successfully, the one-shot pipeline removes those four directories **by default**, including all binary files inside them. Cleanup happens only after the final stellar-field plot has read the generated lens mass and coordinate files.
+
+The command-line option is a Boolean pair:
+
+```text
+--remove-intermediate       remove solver intermediate directories (default)
+--no-remove-intermediate    keep them for debugging, reproducibility checks, or lower-level analysis
+```
+
+The selected value is recorded in `run_parameters.json` as `remove_intermediate`.
+
+Manual lower-level execution of `fourier_minimum.py`, `fourier_saddle.py`, or `fourier_maximum.py` does not invoke the one-shot pipeline cleanup. Those workflows can therefore retain solver/Fourier diagnostics when needed.
+
+The renderer and cleanup stages are deliberately downstream of the numerical calculation. They do not modify the C++ adaptive algorithm, random streams, time-delay calculation, component decomposition, Fourier integration, or binary formats.

@@ -20,10 +20,14 @@ scripts/run_pipeline.py
   -> MainDiffraction(...) in src/Micro_field_adaptive.cpp
   -> generated branch-specific binary output
   -> scripts/fourier_minimum.py | fourier_saddle.py | fourier_maximum.py
-  -> full vs macro-only amplification comparison
+  -> final rendering/output curation
+  -> outputs/Freq_Time_Domain_Result_<field-id>/
+  -> remove solver intermediate directories by default
 ```
 
 The one-shot runner owns parameter forwarding. A physical/numerical parameter entered by the user must be passed unchanged to the C++ and Python stages that consume it.
+
+Final one-shot products live under `outputs/`. During calculation the C++ solver still uses root-level `MicroField_<field-id>/` and `ResultMinimum/Saddle/Maximum_<field-id>/` directories. The one-shot pipeline removes those intermediate directories after successful final rendering by default. Use `--no-remove-intermediate` when a task needs the raw binary products for debugging, reproducibility checks, convergence studies, or lower-level analysis.
 
 `legacy/` is reference material and is not part of the supported build.
 
@@ -84,7 +88,9 @@ C++17 and the historical `-O3 -g` flags are intentional.
 
 ## Important paths
 
-- `scripts/run_pipeline.py`: preferred one-shot build/simulate/analyze entry point.
+- `scripts/run_pipeline.py`: preferred one-shot build/simulate/analyze/cleanup entry point.
+- `scripts/output_contract.py`: exact four-file final-output whitelist.
+- `scripts/render_outputs.py`: final parameter-rich rendering and frequency-output curation.
 - `scripts/image_type.py`: image classification and macro Morse-phase conventions.
 - `scripts/fourier_minimum.py`: minimum / Type-I Fourier helper.
 - `scripts/fourier_saddle.py`: saddle / Type-II Fourier helper.
@@ -95,14 +101,17 @@ C++17 and the historical `-O3 -g` flags are intentional.
 - `src/ReproducibleRandom.cpp`: deterministic sampling used by the maintained workflow.
 - `include/`: headers required by the maintained C++ build.
 - `SampleMethod/Remnant_MF.csv`: runtime remnant mass-function data expected by the current sampler.
-- `scripts/simulation_config.py`: shared Python physical parameters and filename convention.
+- `scripts/simulation_config.py`: shared Python physical parameters, output root, and filename convention.
 - `scripts/inspect_minimum.py`: minimum-image binary validation/time-domain helper.
+- `outputs/`: git-ignored final one-shot products.
 
 ## Reproducibility rules
 
 Same physical parameters plus the same seed should reproduce sampled lens masses and coordinates. Keep mass and coordinate RNG streams independent. `field-id` is only an output-directory identifier.
 
-Generated output names encode physical parameters to two decimal places. Do not silently change this convention.
+When raw masses/coordinates are needed for comparison, pass `--no-remove-intermediate`; default one-shot cleanup deletes those solver directories only after final rendering succeeds.
+
+Generated binary output names encode physical parameters to two decimal places. Do not silently change this convention.
 
 ## Validation after workflow changes
 
@@ -112,12 +121,12 @@ At minimum:
 cmake -S . -B build
 cmake --build build -j
 ./build/microlensing --help
-python -m py_compile scripts/run_pipeline.py scripts/image_type.py scripts/simulation_config.py scripts/fourier_minimum.py scripts/fourier_saddle.py scripts/fourier_maximum.py
+python -m py_compile scripts/run_pipeline.py scripts/output_contract.py scripts/render_outputs.py scripts/image_type.py scripts/simulation_config.py scripts/fourier_minimum.py scripts/fourier_saddle.py scripts/fourier_maximum.py
 python -m unittest discover -s tests
 uv run python scripts/run_pipeline.py --help
 ```
 
-For scientific smoke runs, keep physical parameters and seed fixed. For reproducibility checks, use distinct field IDs and compare corresponding `Lens_Mass_*.bin` and `MicroLensCoorXY_*.bin` files directly.
+For scientific smoke runs, keep physical parameters and seed fixed. For reproducibility checks involving raw binaries, use distinct field IDs, pass `--no-remove-intermediate`, and compare corresponding `Lens_Mass_*.bin` and `MicroLensCoorXY_*.bin` files directly.
 
 ## Git workflow
 
