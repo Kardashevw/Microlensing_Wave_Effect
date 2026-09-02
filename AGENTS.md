@@ -27,7 +27,7 @@ The one-shot runner owns parameter forwarding. A physical/numerical parameter en
 
 `legacy/` is reference material and is not part of the supported build.
 
-## Image classification
+## Image classification and paper conventions
 
 Use the macro Jacobian eigenvalues
 
@@ -36,19 +36,19 @@ lambda_r = 1 - kappa + gamma
 lambda_t = 1 - kappa - gamma
 ```
 
-- minimum: both positive
-- saddle: opposite signs
-- maximum: both negative
+- minimum / Type I: both positive
+- saddle / Type II: opposite signs
+- maximum / Type III: both negative
 - critical: either exactly zero; reject
 
-The current C++ saddle branch only supports `lambda_r > 0` and `lambda_t < 0`. Do not silently rotate/relabel the opposite saddle orientation because that would require a C++ numerical change.
+Shan et al. (2022) derives Type II using `lambda_r > 0` and `lambda_t < 0` without loss of generality. The current C++ saddle branch implements that orientation explicitly. Do not silently rotate/relabel the opposite saddle orientation because that would require changing the C++ numerical branch.
 
-For positive frequency, the smooth macro complex factors are
+For positive frequency, the Component Decomposition smooth macro factors are
 
 ```text
-minimum  +sqrt(|mu|)
-saddle   -i sqrt(|mu|)
-maximum  -sqrt(|mu|)
+minimum  +sqrt(|mu|)       (Type I, Eq. 19)
+saddle   -i sqrt(|mu|)     (Type II, Eq. 32 for omega > 0)
+maximum  -sqrt(|mu|)       (Type III, Eq. 36)
 ```
 
 with
@@ -61,11 +61,13 @@ The macro-only magnitude plotted in every branch is therefore the same `sqrt(|mu
 
 ## Branch analysis rules
 
-- `scripts/fourier_minimum.py`: preserve the existing maintained transform, smooth subtraction/reconstruction, three-fifths cut, and taper.
-- `scripts/fourier_saddle.py`: preserve the active saddle equations from `legacy/python/TotalSgnFourier.py`, including the finite-field analytic saddle subtraction and explicit transform; restore the `-i sqrt(|mu|)` smooth term.
-- `scripts/fourier_maximum.py`: the legacy Python code had no standalone maximum helper. The maintained extension reverses time around the final nonzero response, uses the minimum-form residual treatment in reversed time, then maps back with `F_max = -conjugate(F_reversed)` with the maximum as phase origin. Do not change this convention casually; it encodes the maximum Morse phase.
+- `scripts/fourier_minimum.py`: preserve the existing maintained Type-I transform, smooth subtraction/reconstruction, three-fifths cut, and residual taper. The taper is an implementation detail; the ideal paper CD derivation relies on the residual approaching zero at the statistical boundary.
+- `scripts/fourier_saddle.py`: preserve the Type-II finite-field analytic expressions corresponding to Eqs. (22), (24), and (32): subtract the finite smooth hyperbolic response and restore `-i sqrt(|mu|)` on the positive-frequency grid.
+- `scripts/fourier_maximum.py`: implement Type III directly as described in Sec. 2.5 / Eq. (36): choose the maximum delay as `t=0`, work on the negative-time side, subtract the constant smooth response there, transform the residual, and restore `-sqrt(|mu|)`. Mirror the maintained Type-I practical truncation/taper on the opposite time edge rather than introducing a separate time-reversal formulation.
 
-The maximum branch needs a representative scientific smoke/convergence test before being treated as a golden validated analysis path.
+The maximum branch still needs a representative scientific smoke/convergence test before being treated as a golden validated analysis path.
+
+The 2024 TAAH paper changes how the time-domain area distribution is computed, but its final frequency-domain step explicitly calls the earlier Component Decomposition algorithm. Do not replace the CD post-processing with a different Fourier prescription merely because the C++ time-domain solver is newer.
 
 ## Build and environment
 
@@ -84,9 +86,9 @@ C++17 and the historical `-O3 -g` flags are intentional.
 
 - `scripts/run_pipeline.py`: preferred one-shot build/simulate/analyze entry point.
 - `scripts/image_type.py`: image classification and macro Morse-phase conventions.
-- `scripts/fourier_minimum.py`: minimum Fourier helper.
-- `scripts/fourier_saddle.py`: saddle Fourier helper.
-- `scripts/fourier_maximum.py`: maximum Fourier helper.
+- `scripts/fourier_minimum.py`: minimum / Type-I Fourier helper.
+- `scripts/fourier_saddle.py`: saddle / Type-II Fourier helper.
+- `scripts/fourier_maximum.py`: maximum / Type-III Fourier helper.
 - `app/microlensing.cpp`: supported C++ CLI entry point.
 - `src/Micro_field_adaptive.cpp`: main adaptive algorithm; avoid unrelated edits.
 - `src/GetPsi_micro_field.cpp`: potential, adaptive-grid, and time-delay calculations; avoid unrelated edits.
