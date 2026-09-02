@@ -81,9 +81,9 @@ The one-shot runner selects:
 
 | Image | Condition | Analysis helper | Smooth positive-frequency macro factor |
 | --- | --- | --- | --- |
-| Minimum (Type I) | $\lambda_r > 0$, $\lambda_t > 0$ | `scripts/fourier_minimum.py` | $+\sqrt{|\mu|}$ |
-| Saddle (Type II) | $\lambda_r > 0$, $\lambda_t < 0$ | `scripts/fourier_saddle.py` | $-i\sqrt{|\mu|}$ |
-| Maximum (Type III) | $\lambda_r < 0$, $\lambda_t < 0$ | `scripts/fourier_maximum.py` | $-\sqrt{|\mu|}$ |
+| Minimum (Type I) | $\lambda_r > 0$, $\lambda_t > 0$ | `scripts/fourier_minimum.py` | $+\sqrt{\|\mu\|}$ |
+| Saddle (Type II) | $\lambda_r > 0$, $\lambda_t < 0$ | `scripts/fourier_saddle.py` | $-i\sqrt{\|\mu\|}$ |
+| Maximum (Type III) | $\lambda_r < 0$, $\lambda_t < 0$ | `scripts/fourier_maximum.py` | $-\sqrt{\|\mu\|}$ |
 
 Here the code's amplitude convention is
 
