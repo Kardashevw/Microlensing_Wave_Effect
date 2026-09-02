@@ -14,5 +14,9 @@ jobs:
         run: cmake -S . -B build
       - name: Build
         run: cmake --build build -j2
-      - name: CLI smoke check
+      - name: C++ CLI smoke check
         run: ./build/microlensing --help
+      - name: Python syntax check
+        run: python -m py_compile scripts/run_pipeline.py scripts/fourier_minimum.py
+      - name: Pipeline CLI smoke check
+        run: python scripts/run_pipeline.py --help
