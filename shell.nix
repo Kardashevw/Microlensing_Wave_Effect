@@ -2,7 +2,9 @@
 
 pkgs.mkShell {
   packages = with pkgs; [
+    cmake
     gcc
+    gnumake
     python311
     uv
     zlib
@@ -20,6 +22,8 @@ pkgs.mkShell {
     echo "Microlensing development environment"
     echo "Python: $(python3.11 --version)"
     echo "G++:    $(g++ --version | head -n 1)"
+    echo "CMake:  $(cmake --version | head -n 1)"
+    echo "Make:   $(make --version | head -n 1)"
     echo "uv:     $(uv --version)"
   '';
 }
