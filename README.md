@@ -1,69 +1,60 @@
 # Microlensing Wave Effect
 
-This repository contains code for calculating wave-optics diffraction through microlensing fields. The implementation includes the component-decomposition method and the adaptive hierarchical algorithm described in the associated papers.
+Research software for wave-optics diffraction through microlensing fields, including the component-decomposition method and adaptive hierarchical algorithm described in the associated papers.
 
-This fork also adds a reproducible local workflow for building, running, and inspecting simulations on Linux/Nix systems.
+This repository keeps the numerical implementation separate from entry points, analysis helpers, legacy research scripts, and generated outputs. The reorganization is intentionally structural: scientific formulas, numerical algorithms, random streams, binary formats, and solver control flow are not changed.
 
-## Repository overview
+## Repository layout
 
-- `Micro_field_adaptive.cpp` — main adaptive microlensing-field calculation.
-- `GetPsi_micro_field.cpp` — microlensing potential, time-delay, and adaptive-grid routines.
-- `SampleMethod/RejectAndAcceptSample.cpp` — original stellar/remnant mass-function sampling implementation.
-- `ReproducibleRandom.cpp` / `ReproducibleRandom.h` — deterministic random sampling used by the current example workflow.
-- `Example.cpp` — command-line entry point for a single simulation.
-- `Example.sh` — C++ build command.
-- `scripts/inspect_minimum.py` — validates and plots minimum-image binary output.
-- `scripts/fourier_minimum.py` — computes the minimum-image frequency-domain amplification and phase.
-- `scripts/simulation_config.py` — shared Python parameter and filename configuration.
-- `TotalSgnFourier.py` and other original Python scripts — research-analysis scripts from the upstream project; some still contain paths to external datasets and are not standalone.
+```text
+app/                    supported C++ command-line entry point
+include/                C++ headers and bundled spline header
+src/                    maintained C++ numerical implementation
+legacy/cpp/             original C++ implementations kept for reference
+legacy/python/          original research-analysis scripts
+scripts/                maintained Python validation/analysis helpers
+SampleMethod/           runtime remnant mass-function data
+CMakeLists.txt           supported C++ build
+pyproject.toml           Python environment/dependencies
+shell.nix                Nix development environment
+```
+
+Generated simulation directories are intentionally excluded from version control.
 
 ## Environment
 
-The maintained development workflow uses:
-
-- GCC / G++
-- C++17
-- Python 3.11
-- `uv` for Python dependencies
-- Nix for compiler/runtime dependencies
-
-Enter the development shell and install the Python environment:
+The maintained development workflow uses GCC/G++, C++17, Python 3.11, `uv`, and Nix.
 
 ```bash
 nix-shell
 uv sync
 ```
 
-Check that the main Python dependencies import correctly:
-
-```bash
-uv run python -c "import numpy, scipy, matplotlib, tqdm, pandas, seaborn, astropy, mpmath; print('Python environment OK')"
-```
-
-> `shell.nix` currently imports `<nixpkgs>` and is therefore not fully pinned. For exact long-term environment reproducibility, migrate to a Nix flake with `flake.lock`.
-
 ## Build
 
-Inside `nix-shell`:
-
 ```bash
-bash Example.sh
+cmake -S . -B build
+cmake --build build -j
 ```
 
-The resulting executable is `./Example`.
-
-Show available simulation options:
+The executable is:
 
 ```bash
-./Example --help
+./build/microlensing
 ```
 
-## Running a simulation
-
-A small minimum-image smoke test can be run with:
+Show options with:
 
 ```bash
-time ./Example \
+./build/microlensing --help
+```
+
+The CMake target keeps the historical `-O3 -g` compilation flags and C++17 standard used by the previous build script.
+
+## Run a simulation
+
+```bash
+./build/microlensing \
   --kappa 0.45 \
   --gamma 0.45 \
   --kappa-star 0.03 \
@@ -72,59 +63,12 @@ time ./Example \
   --threads 8 \
   --precision-factor 10 \
   --field-id 10 \
-  --seed 12345 \
-  |& tee run-p10.log
+  --seed 12345
 ```
 
-The command-line options are:
+`field-id` identifies output directories and is not a physical parameter or random seed.
 
-| Option | Meaning | Current default |
-| --- | --- | ---: |
-| `--kappa` | Macro convergence | `0.45` |
-| `--gamma` | Macro shear | `0.45` |
-| `--kappa-star` | Stellar microlens convergence | `0.03` |
-| `--lens-z` | Lens redshift | `0.5` |
-| `--source-z` | Source redshift | `1.0` |
-| `--threads` | C++ worker threads | `8` |
-| `--precision-factor` | Field-size / time-window precision control | `10` |
-| `--field-id` | Run/output-directory identifier | `15` |
-| `--seed` | Deterministic random seed | `12345` |
-
-`field-id` is an output identifier; it is not a physical parameter. The executable creates the required output directories automatically.
-
-## Reproducible random fields
-
-The current example workflow uses deterministic random sampling. Running the same physical parameters with the same `--seed` produces the same sampled lens masses and coordinates.
-
-For example, run the same case with two different field IDs:
-
-```bash
-./Example --kappa 0.45 --gamma 0.45 --kappa-star 0.03 \
-  --lens-z 0.5 --source-z 1.0 --threads 8 \
-  --precision-factor 10 --field-id 101 --seed 12345
-
-./Example --kappa 0.45 --gamma 0.45 --kappa-star 0.03 \
-  --lens-z 0.5 --source-z 1.0 --threads 8 \
-  --precision-factor 10 --field-id 102 --seed 12345
-```
-
-Then compare the generated lens inputs:
-
-```bash
-sha256sum \
-  MicroField_101/Lens_Mass_0.45_0.45_0.03_0.50_1.00.bin \
-  MicroField_102/Lens_Mass_0.45_0.45_0.03_0.50_1.00.bin
-
-sha256sum \
-  MicroField_101/MicroLensCoorXY_0.45_0.45_0.03_0.50_1.00.bin \
-  MicroField_102/MicroLensCoorXY_0.45_0.45_0.03_0.50_1.00.bin
-```
-
-Each pair should have matching hashes. Changing the seed should change the realization.
-
-## Output layout
-
-For `--field-id 10`, the main output directories are:
+The maintained executable creates output directories such as:
 
 ```text
 MicroField_10/
@@ -134,35 +78,9 @@ ResultMaximum_10/
 Freq_Time_Domain_Result_10/
 ```
 
-For the minimum-image example with
+## Maintained analysis workflow
 
-```text
-kappa       = 0.45
- gamma      = 0.45
- kappa-star = 0.03
- lens-z     = 0.50
- source-z   = 1.00
-```
-
-important files include:
-
-```text
-MicroField_10/AveMassAndNum_0.45_0.45_0.03_0.50_1.00.bin
-ResultMinimum_10/TimeLength_min_0.45_0.45_0.03_0.50_1.00.bin
-ResultMinimum_10/adptive_Area_min_0.45_0.45_0.03_0.50_1.00.bin
-ResultMinimum_10/adptive_Time_min_0.45_0.45_0.03_0.50_1.00.bin
-```
-
-The binary format used by the current Linux/x86-64 workflow is:
-
-- `AveMassAndNum_*.bin`: three C++ `double` values: average lens mass, total number of lenses, and L2 grid length.
-- `TimeLength_*.bin`: one native C++ `long` value. On x86-64 Linux this is 8 bytes and is read as `numpy.int64` by the helper scripts.
-- `adptive_Area_*.bin`: `TimeLength` C++ `double` values.
-- `adptive_Time_*.bin`: `TimeLength` C++ `double` values.
-
-## Validate a minimum-image run
-
-Use the shared physical parameters and matching field ID:
+Validate a minimum-image run:
 
 ```bash
 uv run python scripts/inspect_minimum.py \
@@ -174,11 +92,7 @@ uv run python scripts/inspect_minimum.py \
   --field-id 10
 ```
 
-The script checks binary lengths, finite values, monotonic time samples, and constructs the time-domain response `dA/dt`. It writes its plot under `Freq_Time_Domain_Result_<field-id>/`.
-
-## Fourier-domain analysis
-
-Run:
+Compute minimum-image Fourier-domain amplification and phase:
 
 ```bash
 uv run python scripts/fourier_minimum.py \
@@ -190,113 +104,30 @@ uv run python scripts/fourier_minimum.py \
   --field-id 10
 ```
 
-Optional frequency-grid arguments are:
+Shared physical parameters and filename conventions live in `scripts/simulation_config.py`.
 
-```text
---f-min   default 0.1 Hz
---f-max   default 2000 Hz
---df      default 1 Hz
-```
+## Reproducibility
 
-The script reports:
+For numerical comparisons:
 
-- macro magnification amplitude
-- physical time coefficient
-- time step
-- retained time-domain duration
-- characteristic frequency resolution, approximately `1 / duration`
-- Nyquist frequency, `1 / (2 dt)`
-- amplification range
-- phase range
-- low-frequency `|F| / mu` sanity check
+1. Keep physical parameters fixed.
+2. Keep `--seed` fixed.
+3. Use distinct `--field-id` values to avoid overwrites.
+4. Compare generated lens mass and coordinate files directly.
 
-It writes CSV and PNG outputs under `Freq_Time_Domain_Result_<field-id>/`.
+The maintained RNG implementation keeps mass and coordinate streams independent. The repository reorganization does not modify that implementation.
 
-## Current validation status
+## Binary-format assumptions
 
-A small smoke case with
+The current helper scripts target the Linux/x86-64 development workflow. Existing native binary layouts are preserved; this cleanup does not version or reinterpret them.
 
-```text
-kappa = 0.45
-gamma = 0.45
-kappa-star = 0.03
-lens-z = 0.5
-source-z = 1.0
-precision-factor = 10
-```
+## Legacy code
 
-has successfully completed the full pipeline:
-
-```text
-C++ build
-  -> microlens sampling
-  -> adaptive minimum-image simulation
-  -> binary validation
-  -> time-domain response
-  -> Fourier-domain amplification and phase
-```
-
-This small case is intended for software validation, not scientific convergence. In one tested realization the retained time window was below 1 ms, so low-frequency structure was not well resolved even though the numerical transform passed its low-frequency macro-limit sanity check.
-
-## Convergence testing
-
-When comparing numerical settings, keep the physical parameters and random seed fixed and use different field IDs to avoid overwriting output. A useful next comparison is:
-
-```text
-P10: --precision-factor 10 --seed 12345
-P20: --precision-factor 20 --seed 12345
-```
-
-Compare at least:
-
-- lens count
-- L2 grid length
-- nonzero area-sample count
-- retained time duration
-- characteristic frequency resolution
-- Nyquist frequency
-- amplification curve
-- phase curve
-- runtime
-
-Increasing `precision-factor` can change the field boundary and therefore the number of stars, so P10 and P20 are deterministic runs but not necessarily identical nested finite lens fields.
-
-## Important notes
-
-- Do not run the original `TotalSgnFourier.py` as a standalone workflow without reviewing it first; it contains paths to external project datasets.
-- Generated output filenames encode physical parameters to two decimal places. Avoid parameter sweeps that differ only beyond two decimal places unless the naming scheme is updated.
-- Keep different experiments in different `field-id` directories to prevent accidental overwrites.
-- The minimum-image helper scripts currently support the minimum branch only.
-- Read `AGENTS.md` before making automated or AI-assisted changes to the repository.
+Files under `legacy/` are retained as research/reference material and are not part of the supported build. Some original Python scripts contain external dataset paths and should be reviewed before use.
 
 ## Citation
 
-If you find this work useful in your research, please cite:
+If you find this work useful, please cite the associated microlensing wave-effect papers:
 
-```bibtex
-@article{Shan:2022xfx,
-    author = "Shan, Xikai and Li, Guoliang and Chen, Xuechun and Zheng, Wenwen and Zhao, Wen",
-    title = "{Wave effect of gravitational waves intersected with a microlens field: A new algorithm and supplementary study}",
-    eprint = "2208.13566",
-    archivePrefix = "arXiv",
-    primaryClass = "astro-ph.CO",
-    doi = "10.1007/s11433-022-1985-3",
-    journal = "Sci. China Phys. Mech. Astron.",
-    volume = "66",
-    number = "3",
-    pages = "239511",
-    year = "2023"
-}
-```
-
-```bibtex
-@misc{shan2024waveeffectgravitationalwaves,
-    title = {Wave effect of gravitational waves intersected with a microlens field II: an adaptive hierarchical tree algorithm and population study},
-    author = {Xikai Shan and Guoliang Li and Xuechun Chen and Wen Zhao and Bin Hu and Shude Mao},
-    year = {2024},
-    eprint = {2409.06747},
-    archivePrefix = {arXiv},
-    primaryClass = {astro-ph.IM},
-    url = {https://arxiv.org/abs/2409.06747}
-}
-```
+- X. Shan et al., *Wave effect of gravitational waves intersected with a microlens field: A new algorithm and supplementary study*, Sci. China Phys. Mech. Astron. 66, 239511 (2023), arXiv:2208.13566.
+- X. Shan et al., *Wave effect of gravitational waves intersected with a microlens field II: an adaptive hierarchical tree algorithm and population study* (2024), arXiv:2409.06747.
