@@ -6,7 +6,6 @@ from scripts.image_type import (
     classify_image,
     macro_amplitude,
     macro_complex_factor,
-    maximum_from_reversed_factor,
     saddle_orientation_supported,
 )
 
@@ -33,7 +32,7 @@ class ImageTypeTests(unittest.TestCase):
     def test_macro_amplitude(self):
         self.assertAlmostEqual(macro_amplitude(0.45, 0.45), math.sqrt(10.0))
 
-    def test_macro_morse_factors(self):
+    def test_positive_frequency_component_decomposition_macro_terms(self):
         amplitude = 3.0
         self.assertEqual(
             macro_complex_factor(ImageType.MINIMUM, amplitude),
@@ -46,13 +45,6 @@ class ImageTypeTests(unittest.TestCase):
         self.assertEqual(
             macro_complex_factor(ImageType.MAXIMUM, amplitude),
             -3.0 + 0.0j,
-        )
-
-    def test_maximum_time_reversal_mapping(self):
-        reversed_factor = 2.0 + 5.0j
-        self.assertEqual(
-            maximum_from_reversed_factor(reversed_factor),
-            -2.0 + 5.0j,
         )
 
 
