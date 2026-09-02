@@ -128,14 +128,14 @@ double MainDiffraction(
     //质量
     ofstream IMFSampleTestOP;
     char IMFSampleTestFile[100];
-    sprintf(IMFSampleTestFile,"./MicroField_%2d/Lens_Mass_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+    sprintf(IMFSampleTestFile,"./MicroField_%d/Lens_Mass_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
     IMFSampleTestOP.open(IMFSampleTestFile, std::ofstream::binary);
     IMFSampleTestOP.write(reinterpret_cast<char *>(MassSample), sizeof(double)*(NStarStellar + NStarRemnant));
     IMFSampleTestOP.close();
     //坐标
     ofstream MicroLensCoorXYOP;
     char MicroLensCoorXYFile[100];
-    sprintf(MicroLensCoorXYFile,"./MicroField_%2d/MicroLensCoorXY_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+    sprintf(MicroLensCoorXYFile,"./MicroField_%d/MicroLensCoorXY_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
     MicroLensCoorXYOP.open(MicroLensCoorXYFile, std::ofstream::binary);
     MicroLensCoorXYOP.write(reinterpret_cast<char *>(MicroLensCoorXY), sizeof(double)*2*(NStarStellar + NStarRemnant));
     MicroLensCoorXYOP.close();
@@ -508,7 +508,7 @@ double MainDiffraction(
     AveMassTotalAndTotalNum.push_back(NStar);
     AveMassTotalAndTotalNum.push_back(X1L2Length);
     char AveMassAndNumName[100];
-    sprintf(AveMassAndNumName,"./MicroField_%2d/AveMassAndNum_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
+    sprintf(AveMassAndNumName,"./MicroField_%d/AveMassAndNum_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
     ofstream AveMassAndNumFile;
     AveMassAndNumFile.open(AveMassAndNumName, std::ofstream::binary);
     AveMassAndNumFile.write(reinterpret_cast<char *>(&AveMassTotalAndTotalNum[0]), sizeof(double)*3);
@@ -672,16 +672,16 @@ double MainDiffraction(
     //Minimum
     if((mur > 0)&&(mut > 0))
     {
-        sprintf(LayersFile,"ResultMinimum_%2d/LayersFile_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
-        sprintf(TimeLengthFile,"ResultMinimum_%2d/TimeLength_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(LayersFile,"ResultMinimum_%d/LayersFile_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(TimeLengthFile,"ResultMinimum_%d/TimeLength_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
         LF.open(LayersFile, std::ofstream::binary);
         TLFile.open(TimeLengthFile, std::ofstream::binary);
 
         double Axisa = sqrt(1/coeffi/mur);
         double Axisb = sqrt(1/coeffi/mut);
         
-        sprintf(AreaName,"ResultMinimum_%2d/adptive_Area_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
-        sprintf(TimeName,"ResultMinimum_%2d/adptive_Time_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
+        sprintf(AreaName,"ResultMinimum_%d/adptive_Area_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(TimeName,"ResultMinimum_%d/adptive_Time_min_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
         
         fp_area.open(AreaName, std::ofstream::binary);
         fp_time.open(TimeName, std::ofstream::binary);
@@ -995,8 +995,8 @@ double MainDiffraction(
     //Saddle
     if(mur * mut < 0)
     {
-        sprintf(LayersFile,"ResultSaddle_%2d/LayersFile_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
-        sprintf(TimeLengthFile,"ResultSaddle_%2d/TimeLength_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(LayersFile,"ResultSaddle_%d/LayersFile_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
+        sprintf(TimeLengthFile,"ResultSaddle_%d/TimeLength_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
         LF.open(LayersFile, std::ofstream::binary); 
         TLFile.open(TimeLengthFile, std::ofstream::binary);
 
@@ -1017,15 +1017,15 @@ double MainDiffraction(
         X1020New.push_back(X10New);
         X1020New.push_back(X20New);
         char X1020NewName[100];
-        sprintf(X1020NewName,"./ResultSaddle_%2d/X1020New_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
+        sprintf(X1020NewName,"./ResultSaddle_%d/X1020New_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
         ofstream X1020NewFile;
         X1020NewFile.open(X1020NewName, std::ofstream::binary);
         X1020NewFile.write(reinterpret_cast<char *>(&X1020New[0]), sizeof(double)*2);
         X1020NewFile.close();
         //以上
         
-        sprintf(AreaName,"ResultSaddle_%2d/adptive_Area_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
-        sprintf(TimeName,"ResultSaddle_%2d/adptive_Time_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
+        sprintf(AreaName,"ResultSaddle_%d/adptive_Area_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(TimeName,"ResultSaddle_%d/adptive_Time_sad_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
         
         fp_area.open(AreaName, std::ofstream::binary);
         fp_time.open(TimeName, std::ofstream::binary);
@@ -1377,8 +1377,8 @@ double MainDiffraction(
     //Maximum
     if((mur < 0)&&(mut < 0))
     {
-        sprintf(LayersFile,"ResultMaximum_%2d/LayersFile_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
-        sprintf(TimeLengthFile,"ResultMaximum_%2d/TimeLength_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(LayersFile,"ResultMaximum_%d/LayersFile_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(TimeLengthFile,"ResultMaximum_%d/TimeLength_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
         LF.open(LayersFile, std::ofstream::binary);
         TLFile.open(TimeLengthFile, std::ofstream::binary);
         mur = - mur;
@@ -1386,8 +1386,8 @@ double MainDiffraction(
         double Axisa = sqrt(1/coeffi/mur);
         double Axisb = sqrt(1/coeffi/mut);
         
-        sprintf(AreaName,"ResultMaximum_%2d/adptive_Area_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
-        sprintf(TimeName,"ResultMaximum_%2d/adptive_Time_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
+        sprintf(AreaName,"ResultMaximum_%d/adptive_Area_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift);
+        sprintf(TimeName,"ResultMaximum_%d/adptive_Time_max_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.bin", Max_mass, kappa, gamma, kappaStar_in, LensRedshift, SourceRedshift); 
         
         fp_area.open(AreaName, std::ofstream::binary);
         fp_time.open(TimeName, std::ofstream::binary);
