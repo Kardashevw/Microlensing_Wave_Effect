@@ -75,9 +75,9 @@ The one-shot runner selects:
 
 | Image | Condition | Analysis helper | Smooth positive-frequency macro factor |
 | --- | --- | --- | --- |
-| Minimum | `lambda_r > 0`, `lambda_t > 0` | `scripts/fourier_minimum.py` | `+sqrt(|mu|)` |
-| Saddle | `lambda_r > 0`, `lambda_t < 0` | `scripts/fourier_saddle.py` | `-i sqrt(|mu|)` |
-| Maximum | `lambda_r < 0`, `lambda_t < 0` | `scripts/fourier_maximum.py` | `-sqrt(|mu|)` |
+| Minimum (Type I) | `lambda_r > 0`, `lambda_t > 0` | `scripts/fourier_minimum.py` | `+sqrt(|mu|)` |
+| Saddle (Type II) | `lambda_r > 0`, `lambda_t < 0` | `scripts/fourier_saddle.py` | `-i sqrt(|mu|)` |
+| Maximum (Type III) | `lambda_r < 0`, `lambda_t < 0` | `scripts/fourier_maximum.py` | `-sqrt(|mu|)` |
 
 Here the code's amplitude convention is
 
@@ -85,49 +85,49 @@ Here the code's amplitude convention is
 sqrt(|mu|) = sqrt(abs(1 / ((1-kappa)^2 - gamma^2)))
 ```
 
-so the macro-only **magnitude** plotted for all three image types is the same frequency-independent `sqrt(|mu|)`. The complex signs/phases in the table are the Morse phases and matter for the phase output, not for the macro-only magnitude curve.
+so the macro-only **magnitude** plotted for all three image types is the same frequency-independent `sqrt(|mu|)`. The complex signs/phases are the Morse phases and matter for the phase output, not for the macro-only magnitude curve.
 
-Critical cases with either eigenvalue exactly zero are rejected. The current C++ saddle branch internally assumes `lambda_r > 0` and `lambda_t < 0`; the opposite saddle orientation is detected but rejected rather than silently reinterpreted, because supporting it would require changing the C++ numerical branch.
+The Type-II derivation in Shan et al. chooses `lambda_r > 0`, `lambda_t < 0` without loss of generality. The current C++ saddle branch implements that orientation explicitly, so the opposite orientation is detected but rejected rather than silently rotating/relabeling the numerical problem.
 
 ## Branch-specific Fourier treatment
 
-### Minimum
+The frequency-domain helpers implement the Component Decomposition (CD) structure from Shan et al. (2022): compute the finite numerical time-domain response, subtract the analytic smooth component, transform the residual, then restore the analytic smooth macro contribution.
 
-The maintained minimum treatment is unchanged. It uses the existing leading nonzero response, time-origin shift, three-fifths cut, smooth constant subtraction, one-sided Hann taper, explicit frequency loop, and restoration of the smooth `+sqrt(|mu|)` term.
+### Minimum / Type I
 
-### Saddle
+The maintained minimum treatment is unchanged. Its smooth time-domain component is constant for positive time, and the restored positive-frequency macro term is `+sqrt(|mu|)`, matching Eq. (19) of Shan et al. (2022).
 
-The saddle helper ports the active saddle equations from `legacy/python/TotalSgnFourier.py` into a standalone workflow:
+The current maintained implementation also uses an empirical three-fifths cut and a one-sided Hann taper on the **residual** before the explicit frequency integration. Those are practical implementation details inherited from the repository code; the paper's ideal CD derivation relies on the residual approaching zero at the statistical boundary and does not require apodizing the full time-domain signal.
+
+### Saddle / Type II
+
+The saddle helper ports the active Type-II finite-boundary equations into a standalone workflow:
 
 1. read `ResultSaddle_<field-id>/` and `X1020New_*`,
 2. construct `dA/dt`,
 3. avoid an exact `t=0` sample because the analytic smooth saddle contains `log(|t|)`,
-4. retain the middle three-fifths of the time curve,
-5. subtract the finite-field analytic saddle response used by the original code,
+4. retain the middle three-fifths of the numerical time curve,
+5. subtract the finite-field analytic smooth response corresponding to the two hyperbolic regions,
 6. explicitly Fourier-transform the residual,
-7. restore the smooth saddle term `-i sqrt(|mu|)`.
+7. restore `-i sqrt(|mu|)` for the positive-frequency grid.
 
-This keeps the original active saddle subtraction and transform convention rather than replacing it with an FFT or a new approximation.
+This is the positive-frequency form of Eq. (32), where the paper gives `-i Sgn(omega) sqrt(mu)`.
 
-### Maximum
+### Maximum / Type III
 
-The C++ solver already writes a distinct `ResultMaximum_<field-id>/` dataset, but the legacy Python code did not contain a standalone maximum Fourier routine. The maintained extension uses time-reversal symmetry without modifying the solver:
+Type III is implemented directly from Sec. 2.5 and Eq. (36) of Shan et al. (2022), rather than through an additional time-reversal identity:
 
-1. form `dA/dt` from the maximum output,
-2. retain data through the final nonzero maximum response,
-3. define reversed time `tau = T_max - T`,
-4. in `tau`, apply the same smooth constant subtraction, three-fifths cut, taper, and explicit transform convention as the minimum branch,
-5. map the reversed complex factor back with
+1. read the existing `ResultMaximum_<field-id>/` output,
+2. identify the final nonzero maximum response and choose that maximum delay as `t=0`,
+3. retain the corresponding final three-fifths of the time series, mirroring the maintained Type-I practical truncation,
+4. subtract the constant smooth Type-III time-domain component on `t < 0` (half weight at the `t=0` endpoint),
+5. apply the mirrored one-sided residual taper used by the maintained Type-I helper,
+6. explicitly Fourier-transform the residual in the original negative-time coordinate,
+7. restore the analytic Type-III macro term `-sqrt(|mu|)`.
 
-```text
-F_max(f) = -conjugate(F_reversed(f))
-```
+This follows the paper's statement that Type III uses the same CD method as Type I, with the infinite-time side reversed and the smooth frequency-domain contribution changing from `+sqrt(mu)` to `-sqrt(mu)`.
 
-when `T_max` is chosen as the phase origin.
-
-The conjugation comes from `T -> T_max - tau`; the minus sign restores the maximum-image Morse phase. A time-origin change only multiplies the complex factor by a unit phase and therefore does not alter the plotted amplification magnitude.
-
-This maximum implementation has lightweight convention tests, but unlike the minimum branch it does not yet have a historical golden scientific smoke dataset in this repository. Before using maximum results for production science, run a representative maximum case and check its low-frequency macro limit and convergence with `precision-factor`.
+The maximum branch should still receive a representative scientific smoke/convergence test before being treated as a golden validated path, especially because the repository previously lacked a maintained standalone Type-III post-processing helper.
 
 ## Outputs
 
