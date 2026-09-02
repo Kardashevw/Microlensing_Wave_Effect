@@ -8,7 +8,7 @@ import unittest
 SCRIPTS_DIR = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from render_outputs import clean_output_directory, documented_output_names
+from output_contract import clean_output_directory, documented_output_names
 
 
 class FinalOutputCleanupTests(unittest.TestCase):
