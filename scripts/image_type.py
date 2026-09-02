@@ -47,14 +47,3 @@ def macro_complex_factor(image_type: ImageType, amplitude: float) -> complex:
     if image_type is ImageType.MAXIMUM:
         return complex(-amplitude, 0.0)
     raise ValueError(f"Unsupported image type: {image_type}")
-
-
-def maximum_from_reversed_factor(reversed_factor: complex) -> complex:
-    """Map the positive-time reversed response back to a maximum response.
-
-    With the maximum delay chosen as the time origin, T -> -tau changes the
-    Fourier integral by complex conjugation. The extra minus sign is the
-    maximum-image Morse phase relative to the corresponding positive quadratic
-    form.
-    """
-    return -reversed_factor.conjugate()
