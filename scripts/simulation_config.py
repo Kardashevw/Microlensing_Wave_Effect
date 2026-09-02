@@ -31,6 +31,14 @@ class SimulationConfig:
         return Path(f"ResultMinimum_{self.field_id}")
 
     @property
+    def saddle_dir(self) -> Path:
+        return Path(f"ResultSaddle_{self.field_id}")
+
+    @property
+    def maximum_dir(self) -> Path:
+        return Path(f"ResultMaximum_{self.field_id}")
+
+    @property
     def frequency_dir(self) -> Path:
         return Path(f"Freq_Time_Domain_Result_{self.field_id}")
 
