@@ -43,6 +43,7 @@ def intermediate_directories(repo_root: Path, config) -> list[Path]:
         repo_root / config.minimum_dir,
         repo_root / config.saddle_dir,
         repo_root / config.maximum_dir,
+        repo_root / f"Freq_Time_Domain_Result_{config.field_id}",
     ]
 
 
@@ -123,9 +124,10 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         default=True,
         help=(
-            "Remove MicroField_<field-id> and ResultMinimum/Saddle/Maximum_<field-id> "
-            "after all final products are safely rendered (default: enabled). "
-            "Use --no-remove-intermediate to keep them."
+            "Remove MicroField_<field-id>, ResultMinimum/Saddle/Maximum_<field-id>, "
+            "and any stale root-level Freq_Time_Domain_Result_<field-id> after all "
+            "final products are safely rendered (default: enabled). Use "
+            "--no-remove-intermediate to keep them."
         ),
     )
 
