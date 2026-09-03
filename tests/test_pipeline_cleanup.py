@@ -38,6 +38,10 @@ class PipelineCleanupTests(unittest.TestCase):
                 path.mkdir()
                 (path / "intermediate.bin").write_bytes(b"binary")
 
+            final_output = repo_root / config.frequency_dir
+            final_output.mkdir(parents=True)
+            (final_output / "keep.csv").write_bytes(b"keep")
+
             unrelated = repo_root / "MicroField_99"
             unrelated.mkdir()
             (unrelated / "keep.bin").write_bytes(b"keep")
@@ -46,6 +50,7 @@ class PipelineCleanupTests(unittest.TestCase):
 
             self.assertEqual(removed, expected)
             self.assertTrue(all(not path.exists() for path in expected))
+            self.assertTrue((final_output / "keep.csv").is_file())
             self.assertTrue((unrelated / "keep.bin").is_file())
 
     def test_intermediate_cleanup_refuses_symlinks(self):
