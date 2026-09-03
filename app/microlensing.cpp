@@ -107,7 +107,6 @@ int main(int argc, char* argv[])
     fs::create_directories("ResultMinimum_" + id);
     fs::create_directories("ResultSaddle_" + id);
     fs::create_directories("ResultMaximum_" + id);
-    fs::create_directories("Freq_Time_Domain_Result_" + id);
 
     SetSimulationSeed(seed);
 
